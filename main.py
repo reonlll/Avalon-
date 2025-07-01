@@ -13,7 +13,7 @@ intents.members = True
 
 # Bot・CommandTreeの定義
 bot = commands.Bot(command_prefix="!", intents=intents)
-tree = app_commands.CommandTree(bot)
+tree = bot.tree  # これでOK
 
 # あなたのサーバーID（ギルドコマンド同期用）
 GUILD_ID = 1389167820553588797

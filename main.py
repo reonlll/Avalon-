@@ -4,6 +4,9 @@ from discord import app_commands
 import os
 import requests
 from keep_alive import keep_alive
+import ramdam
+
+
 
 # Intent設定
 intents = discord.Intents.default()
@@ -118,6 +121,61 @@ async def subtract_gold(interaction: discord.Interaction, user: discord.User, am
     await interaction.response.send_message(
         f"💸 {user.mention} から {amount:,} gold を減らしました", ephemeral=True
     )
+
+@tree.command(name="pvp", description="指定した相手とPvPバトルを開始します", guild=discord.Object(id=GUILD_ID))
+@app_commands.describe(opponent="対戦相手")
+async def pvp(interaction: discord.Interaction, opponent: discord.User):
+    if opponent.bot:
+        await interaction.response.send_message("❌ Botとは対戦できません", ephemeral=True)
+        return
+    if opponent.id == interaction.user.id:
+        await interaction.response.send_message("❌ 自分とは対戦できません", ephemeral=True)
+        return
+
+    hp_data = {interaction.user.id: 100, opponent.id: 100}
+    view = PvPButton(attacker=interaction.user, defender=opponent, hp_data=hp_data, turn_owner_id=interaction.user.id)
+
+    await interaction.response.send_message(
+        content=f"⚔️ {interaction.user.display_name} vs {opponent.display_name} のバトルが始まった！\n🎮 {interaction.user.display_name} のターン！",
+        view=view
+    )
+
+
+class PvPButton(ui.View):
+    def __init__(self, attacker, defender, hp_data, turn_owner_id):
+        super().__init__(timeout=None)
+        self.attacker = attacker
+        self.defender = defender
+        self.hp_data = hp_data
+        self.turn_owner_id = turn_owner_id
+
+    @ui.button(label="攻撃", style=discord.ButtonStyle.red)
+    async def attack(self, interaction: discord.Interaction, button: discord.ui.Button):
+        if interaction.user.id != self.turn_owner_id:
+            await interaction.response.send_message("❌ あなたのターンではありません", ephemeral=True)
+            return
+
+        damage = random.randint(10, 20)
+        self.hp_data[self.defender.id] -= damage
+        attacker_name = interaction.user.display_name
+        defender_name = self.defender.display_name
+        remaining_hp = self.hp_data[self.defender.id]
+
+        if remaining_hp <= 0:
+            await interaction.response.edit_message(
+                content=f"💥 {attacker_name} の攻撃！\n{defender_name} は {damage} ダメージを受けた\n\n🎉 {attacker_name} の勝利！",
+                view=None
+            )
+            return
+
+        # ターン交代
+        self.turn_owner_id = self.defender.id
+        self.attacker, self.defender = self.defender, self.attacker
+        await interaction.response.edit_message(
+            content=f"💥 {attacker_name} の攻撃！\n{defender_name} は {damage} ダメージを受けた\n\n🩸 {defender_name} の残りHP: {remaining_hp}\n🎮 次は {self.attacker.display_name} のターン！",
+            view=self
+        )
+
 
 # --- Flaskで常時起動 ---
 keep_alive()

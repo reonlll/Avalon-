@@ -63,7 +63,7 @@ async def check_balance(interaction: discord.Interaction):
     )
 
 # --- /送金 ---
-@tree.command(name="送金", description="他のユーザーにGOLDを送ります", guild=discord.Object(id=GUILD_ID))
+@tree.command(name="送金", description="他のユーザーにgoldを送ります", guild=discord.Object(id=GUILD_ID))
 @app_commands.describe(user="送金先ユーザー", amount="送る金額")
 async def send_gold(interaction: discord.Interaction, user: discord.User, amount: int):
     load_balance_data()
@@ -74,7 +74,7 @@ async def send_gold(interaction: discord.Interaction, user: discord.User, amount
         await interaction.response.send_message("⚠️ 金額は1以上にしてください", ephemeral=True)
         return
     if balance_data.get(sender_id, 0) < amount:
-        await interaction.response.send_message("💸 所持GOLDが足りません", ephemeral=True)
+        await interaction.response.send_message("💸 所持goldが足りません", ephemeral=True)
         return
 
     balance_data[sender_id] -= amount
@@ -82,11 +82,11 @@ async def send_gold(interaction: discord.Interaction, user: discord.User, amount
     save_balance_data()
 
     await interaction.response.send_message(
-        f"✅ {amount:,} GOLD を {user.mention} に送金しました！", ephemeral=True
+        f"✅ {amount:,} gold を {user.mention} に送金しました！", ephemeral=True
     )
 
 # --- /GOLD付与（管理者） ---
-@tree.command(name="GOLD付与", description="ユーザーにGOLDを付与（管理者限定）", guild=discord.Object(id=GUILD_ID))
+@tree.command(name="gold付与", description="ユーザーにGOLDを付与（管理者限定）", guild=discord.Object(id=GUILD_ID))
 @app_commands.describe(user="対象ユーザー", amount="付与する金額")
 async def add_gold(interaction: discord.Interaction, user: discord.User, amount: int):
     if not interaction.user.guild_permissions.administrator:
@@ -99,11 +99,11 @@ async def add_gold(interaction: discord.Interaction, user: discord.User, amount:
     save_balance_data()
 
     await interaction.response.send_message(
-        f"✅ {user.mention} に {amount:,} GOLD を付与しました", ephemeral=True
+        f"✅ {user.mention} に {amount:,} gold を付与しました", ephemeral=True
     )
 
 # --- /GOLD減少（管理者） ---
-@tree.command(name="GOLD減少", description="ユーザーのGOLDを減らす（管理者限定）", guild=discord.Object(id=GUILD_ID))
+@tree.command(name="gold減少", description="ユーザーのGOLDを減らす（管理者限定）", guild=discord.Object(id=GUILD_ID))
 @app_commands.describe(user="対象ユーザー", amount="減らす金額")
 async def subtract_gold(interaction: discord.Interaction, user: discord.User, amount: int):
     if not interaction.user.guild_permissions.administrator:
@@ -116,7 +116,7 @@ async def subtract_gold(interaction: discord.Interaction, user: discord.User, am
     save_balance_data()
 
     await interaction.response.send_message(
-        f"💸 {user.mention} から {amount:,} GOLD を減らしました", ephemeral=True
+        f"💸 {user.mention} から {amount:,} gold を減らしました", ephemeral=True
     )
 
 # --- Flaskで常時起動 ---

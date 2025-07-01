@@ -151,7 +151,7 @@ class PvPButton(View):
         self.turn_owner_id = turn_owner_id
 
     @button(label="攻撃", style=discord.ButtonStyle.red)
-    async def attack(self, interaction: discord.Interaction, button: discord.ui.Button):
+    async def attack(self, interaction: discord.Interaction, button: discord.Button):
         if interaction.user.id != self.turn_owner_id:
             await interaction.response.send_message("❌ あなたのターンではありません", ephemeral=True)
             return

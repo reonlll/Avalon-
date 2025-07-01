@@ -142,7 +142,7 @@ async def pvp(interaction: discord.Interaction, opponent: discord.User):
     )
 
 
-class PvPButton(ui.View):
+class PvPButton(View):
     def __init__(self, attacker, defender, hp_data, turn_owner_id):
         super().__init__(timeout=None)
         self.attacker = attacker

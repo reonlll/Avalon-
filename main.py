@@ -4,7 +4,7 @@ from discord import app_commands
 import os
 import requests
 from keep_alive import keep_alive
-import ramdom
+import rondom
 
 
 

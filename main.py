@@ -162,6 +162,61 @@ class JankenView(discord.ui.View):
 
         save_balance_data()
         await interaction.response.send_message(result, ephemeral=True)
+import datetime
+
+# --- 剣カウント用のjsonbin ---
+SWORD_BIN_ID = "あなたの剣Bin IDをここに"
+sword_data = {}
+
+def load_sword_data():
+    url = f"https://api.jsonbin.io/v3/b/{SWORD_BIN_ID}/latest"
+    headers = {"X-Master-Key": API_KEY}
+    res = requests.get(url, headers=headers)
+    if res.status_code == 200:
+        global sword_data
+        sword_data = res.json()["record"]
+    else:
+        print("❌ 剣データの読み込み失敗")
+
+def save_sword_data():
+    url = f"https://api.jsonbin.io/v3/b/{SWORD_BIN_ID}"
+    headers = {
+        "Content-Type": "application/json",
+        "X-Master-Key": API_KEY
+    }
+    requests.put(url, headers=headers, json=sword_data)
+
+# --- /剣を抜く ---
+@tree.command(name="剣を抜く", description="1日1回、剣を抜いて運試し！", guild=discord.Object(id=GUILD_ID))
+async def draw_sword(interaction: discord.Interaction):
+    load_sword_data()
+    user_id = str(interaction.user.id)
+    today = datetime.datetime.now().strftime("%Y-%m-%d")
+
+    if user_id in sword_data and sword_data[user_id].get("last", "") == today:
+        await interaction.response.send_message("🛑 今日はもう剣を抜いています！また明日。", ephemeral=True)
+        return
+
+    count = random.randint(1, 5)
+    total = sword_data.get(user_id, {}).get("total", 0) + count
+
+    sword_data[user_id] = {
+        "total": total,
+        "last": today
+    }
+    save_sword_data()
+
+    await interaction.response.send_message(f"スッ…\n⚔️ **{count} 本**の剣を抜きました！", ephemeral=True)
+
+# --- /剣の本数 ---
+@tree.command(name="剣の本数", description="これまでに抜いた剣の本数を確認", guild=discord.Object(id=GUILD_ID))
+async def sword_count(interaction: discord.Interaction):
+    load_sword_data()
+    user_id = str(interaction.user.id)
+    total = sword_data.get(user_id, {}).get("total", 0)
+
+    await interaction.response.send_message(f"🔢 {interaction.user.mention} はこれまでに **{total} 本** の剣を抜いています。", ephemeral=True)
+
 
 # --- /じゃんけんコマンド登録 ---
 @tree.command(name="じゃんけん", description="3000GOLDを賭けてBotとじゃんけん！", guild=discord.Object(id=GUILD_ID))

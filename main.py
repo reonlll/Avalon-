@@ -144,22 +144,22 @@ class JankenView(discord.ui.View):
         bot_hand = random.choice(["✊", "✌️", "✋"])
 
         if balance_data.get(user_id, 0) < 3000:
-            await interaction.response.send_message("❌ 所持GOLDが足りません（3000GOLD必要）", ephemeral=True)
+            await interaction.response.send_message("❌ 所持goldが足りません（3000GOLD必要）", ephemeral=True)
             return
 
         if user_hand == bot_hand:
             result = f"🤝 あいこでした！（Botの手：{bot_hand}）"
         elif (user_hand, bot_hand) in [("✊", "✌️"), ("✌️", "✋"), ("✋", "✊")]:
             balance_data[user_id] += 3000
-            result = f"🎉 あなたの勝ち！+3000GOLD！（Botの手：{bot_hand}）"
+            result = f"🎉 あなたの勝ち！+3000gold！（Botの手：{bot_hand}）"
         else:
             balance_data[user_id] -= 3000
-            result = f"😢 負けてしまいました... -3000GOLD（Botの手：{bot_hand}）"
+            result = f"😢 負けてしまいました... -3000gold（Botの手：{bot_hand}）"
 
         save_balance_data()
         await interaction.response.send_message(result, ephemeral=True)
 # --- /じゃんけん ---
-@tree.command(name="じゃんけん", description="3000GOLDを賭けてBotとじゃんけん！", guild=discord.Object(id=GUILD_ID))
+@tree.command(name="じゃんけん", description="3000goldを賭けてBotとじゃんけん！", guild=discord.Object(id=GUILD_ID))
 async def janken(interaction: discord.Interaction):
     await interaction.response.send_message(
         "🕹️ グー・チョキ・パーから選んでください！",

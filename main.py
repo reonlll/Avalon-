@@ -128,11 +128,13 @@ class JankenView(discord.ui.View):
         super().__init__(timeout=30)
 
 # --- /じゃんけん ---
-@tree.command(name="じゃんけん", description="3000GOLDでじゃんけんに挑戦！", guild=discord.Object(id=GUILD_ID))
-async def janken_command(interaction: discord.Interaction):
-    load_balance_data()  # 残高読み込み（重要）
-    view = JankenView()
-    await interaction.response.send_message("🕹️ 手を選んでください！", view=view, ephemeral=True)
+@tree.command(name="じゃんけん", description="3000GOLDを賭けてBotとじゃんけん！", guild=discord.Object(id=GUILD_ID))
+async def janken(interaction: discord.Interaction):
+    await interaction.response.send_message(
+        "🕹️ グー・チョキ・パーから選んでください！",
+        view=JankenView(),
+        ephemeral=True  # ←必要ならFalseにしてみんなに見せる
+    )
 
     @discord.ui.button(label="✊", style=discord.ButtonStyle.primary)
     async def rock(self, interaction: discord.Interaction, button: discord.ui.Button):

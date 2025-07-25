@@ -123,67 +123,42 @@ async def subtract_gold(interaction: discord.Interaction, user: discord.User, am
         f"💸 {user.mention} から {amount:,} gold を減らしました", ephemeral=True
     )
 
-import discord
-from discord import app_commands
-from discord.ext import commands
-import random
+class JankenView(discord.ui.View):
+    def __init__(self):
+        super().__init__(timeout=30)
 
-GUILD_ID = あなたのサーバーID  # ←サーバーIDに置き換えてね
+    @discord.ui.button(label="✊", style=discord.ButtonStyle.primary)
+    async def rock(self, interaction: discord.Interaction, button: discord.ui.Button):
+        await self.process(interaction, "✊")
 
-bot = commands.Bot(command_prefix="!", intents=discord.Intents.all())
-tree = bot.tree
+    @discord.ui.button(label="✌️", style=discord.ButtonStyle.success)
+    async def scissors(self, interaction: discord.Interaction, button: discord.ui.Button):
+        await self.process(interaction, "✌️")
 
-balance_data = {
-    # ユーザーIDをキーに、GOLD残高を値として保存
-}
+    @discord.ui.button(label="✋", style=discord.ButtonStyle.danger)
+    async def paper(self, interaction: discord.Interaction, button: discord.ui.Button):
+        await self.process(interaction, "✋")
 
-# じゃんけんの絵文字
-hands = {
-    "✊": "ぐー",
-    "✌️": "ちょき",
-    "✋": "ぱー"
-}
+    async def process(self, interaction: discord.Interaction, user_hand):
+        user_id = str(interaction.user.id)
+        bot_hand = random.choice(["✊", "✌️", "✋"])
 
-@tree.command(name="じゃんけん", description="GOLDを使ってじゃんけん！（1回3000GOLD）", guild=discord.Object(id=GUILD_ID))
-async def janken(interaction: discord.Interaction):
-    user_id = str(interaction.user.id)
-    user_gold = balance_data.get(user_id, 0)
+        # GOLDが3000未満ならキャンセル
+        if balance_data.get(user_id, 0) < 3000:
+            await interaction.response.send_message("❌ 所持GOLDが足りません（3000GOLD必要）", ephemeral=True)
+            return
 
-    if user_gold < 3000:
-        await interaction.response.send_message("💸 所持GOLDが足りません！（3000GOLD必要）", ephemeral=True)
-        return
+        if user_hand == bot_hand:
+            result = f"🤝 あいこでした！（Botの手：{bot_hand}）"
+        elif (user_hand, bot_hand) in [("✊", "✌️"), ("✌️", "✋"), ("✋", "✊")]:
+            balance_data[user_id] += 3000
+            result = f"🎉 あなたの勝ち！+3000GOLD！（Botの手：{bot_hand}）"
+        else:
+            balance_data[user_id] -= 3000
+            result = f"😢 負けてしまいました... -3000GOLD（Botの手：{bot_hand}）"
 
-    class JankenButton(discord.ui.View):
-        def __init__(self):
-            super().__init__(timeout=10)
-
-        @discord.ui.button(label="✊", style=discord.ButtonStyle.primary)
-        async def rock(self, interaction_button: discord.Interaction, button: discord.ui.Button):
-            await self.process(interaction_button, "✊")
-
-        @discord.ui.button(label="✌️", style=discord.ButtonStyle.primary)
-        async def scissors(self, interaction_button: discord.Interaction, button: discord.ui.Button):
-            await self.process(interaction_button, "✌️")
-
-        @discord.ui.button(label="✋", style=discord.ButtonStyle.primary)
-        async def paper(self, interaction_button: discord.Interaction, button: discord.ui.Button):
-            await self.process(interaction_button, "✋")
-
-        async def process(self, interaction_button, user_hand):
-            bot_hand = random.choice(list(hands.keys()))
-
-            if user_hand == bot_hand:
-                result = "🤝 あいこでした！コインの変動はありません。"
-            elif (user_hand, bot_hand) in [("✊", "✌️"), ("✌️", "✋"), ("✋", "✊")]:
-                balance_data[user_id] += 3000
-                result = f"🎉 あなたの勝ち！+3000 GOLD（現在: {balance_data[user_id]}GOLD）"
-            else:
-                balance_data[user_id] -= 3000
-                result = f"😢 負けてしまいました… -3000 GOLD（現在: {balance_data[user_id]}GOLD）"
-
-            await interaction_button.response.edit_message(content=f"あなた：{user_hand}　Bot：{bot_hand}\n{result}", view=None)
-
-    await interaction.response.send_message("✊✌️✋ じゃんけんぽん！　ボタンから手を選んでね", view=JankenButton())
+        await interaction.response.send_message(result, ephemeral=True)
+        save_balance_data()
 
 
 # --- Flaskで常時起動 ---

@@ -1,4 +1,4 @@
-import discord
+#import discord
 from discord.ext import commands
 from discord import app_commands
 import os
@@ -126,6 +126,13 @@ async def subtract_gold(interaction: discord.Interaction, user: discord.User, am
 class JankenView(discord.ui.View):
     def __init__(self):
         super().__init__(timeout=30)
+
+# --- /じゃんけん ---
+@tree.command(name="じゃんけん", description="3000GOLDでじゃんけんに挑戦！", guild=discord.Object(id=GUILD_ID))
+async def janken_command(interaction: discord.Interaction):
+    load_balance_data()  # 残高読み込み（重要）
+    view = JankenView()
+    await interaction.response.send_message("🕹️ 手を選んでください！", view=view, ephemeral=True)
 
     @discord.ui.button(label="✊", style=discord.ButtonStyle.primary)
     async def rock(self, interaction: discord.Interaction, button: discord.ui.Button):

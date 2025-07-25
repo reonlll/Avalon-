@@ -128,125 +128,62 @@ from discord import app_commands
 from discord.ext import commands
 import random
 
-class JankenButton(discord.ui.View):
-    def __init__(self, user_id):
-        super().__init__(timeout=30)
-        self.user_id = user_id
-        self.result = None
+GUILD_ID = あなたのサーバーID  # ←サーバーIDに置き換えてね
 
-    @discord.ui.button(label="✊ グー", style=discord.ButtonStyle.primary)
-    async def rock(self, interaction: discord.Interaction, button: discord.ui.Button):
-        await self.process(interaction, "グー")
+bot = commands.Bot(command_prefix="!", intents=discord.Intents.all())
+tree = bot.tree
 
-    @discord.ui.button(label="✌️ チョキ", style=discord.ButtonStyle.success)
-    async def scissors(self, interaction: discord.Interaction, button: discord.ui.Button):
-        await self.process(interaction, "チョキ")
+balance_data = {
+    # ユーザーIDをキーに、GOLD残高を値として保存
+}
 
-    @discord.ui.button(label="✋ パー", style=discord.ButtonStyle.danger)
-    async def paper(self, interaction: discord.Interaction, button: discord.ui.Button):
-        await self.process(interaction, "パー")
+# じゃんけんの絵文字
+hands = {
+    "✊": "ぐー",
+    "✌️": "ちょき",
+    "✋": "ぱー"
+}
 
-    async def process(self, interaction: discord.Interaction, player_choice: str):
-        if interaction.user.id != self.user_id:
-            await interaction.response.send_message("これはあなた専用のじゃんけんです！", ephemeral=True)
-            return
-
-        choices = ["グー", "チョキ", "パー"]
-        bot_choice = random.choice(choices)
-
-        result = self.judge(player_choice, bot_choice)
-
-        # ユーザーIDを文字列に変換
-        user_id = str(interaction.user.id)
-
-        if result == "勝ち":
-            balance_data[user_id] = balance_data.get(user_id, 0) + 3000
-        elif result == "負け":
-            balance_data[user_id] = balance_data.get(user_id, 0) - 3000
-
-        save_balance_data()
-
-        await interaction.response.edit_message(
-            content=f"あなた: {player_choice}\nBot: {bot_choice}\n結果: **{result}**\n現在の残高: {balance_data[user_id]}Lydia",
-            view=None
-        )
-
-        self.stop()
-
-    def judge(self, player, bot):
-        if player == bot:
-            return "あいこ"
-        elif (player == "グー" and bot == "チョキ") or \
-             (player == "チョキ" and bot == "パー") or \
-             (player == "パー" and bot == "グー"):
-            return "勝ち"
-        else:
-            return "負け"
-
-@tree.command(name="じゃんけん", description="3000Lydiaでじゃんけん！")
-async def janken_command(interaction: discord.Interaction):
+@tree.command(name="じゃんけん", description="GOLDを使ってじゃんけん！（1回3000GOLD）", guild=discord.Object(id=GUILD_ID))
+async def janken(interaction: discord.Interaction):
     user_id = str(interaction.user.id)
-    balance = balance_data.get(user_id, 0)
+    user_gold = balance_data.get(user_id, 0)
 
-    if balance < 3000:
-        await interaction.response.send_message("Lydiaが足りません！(3000必要)", ephemeral=True)
+    if user_gold < 3000:
+        await interaction.response.send_message("💸 所持GOLDが足りません！（3000GOLD必要）", ephemeral=True)
         return
 
-    await interaction.response.send_message("✊✌️✋ じゃんけんスタート！選んでください：", view=JankenButton(interaction.user.id))
+    class JankenButton(discord.ui.View):
+        def __init__(self):
+            super().__init__(timeout=10)
 
-@tree.command(name="pvp", description="指定した相手とPvPバトルを開始します", guild=discord.Object(id=GUILD_ID))
-@app_commands.describe(opponent="対戦相手")
-async def pvp(interaction: discord.Interaction, opponent: discord.User):
-    if opponent.bot:
-        await interaction.response.send_message("❌ Botとは対戦できません", ephemeral=True)
-        return
-    if opponent.id == interaction.user.id:
-        await interaction.response.send_message("❌ 自分とは対戦できません", ephemeral=True)
-        return
+        @discord.ui.button(label="✊", style=discord.ButtonStyle.primary)
+        async def rock(self, interaction_button: discord.Interaction, button: discord.ui.Button):
+            await self.process(interaction_button, "✊")
 
-    hp_data = {interaction.user.id: 100, opponent.id: 100}
-    view = PvPButton(attacker=interaction.user, defender=opponent, hp_data=hp_data, turn_owner_id=interaction.user.id)
+        @discord.ui.button(label="✌️", style=discord.ButtonStyle.primary)
+        async def scissors(self, interaction_button: discord.Interaction, button: discord.ui.Button):
+            await self.process(interaction_button, "✌️")
 
-    await interaction.response.send_message(
-        content=f"⚔️ {interaction.user.display_name} vs {opponent.display_name} のバトルが始まった！\n🎮 {interaction.user.display_name} のターン！",
-        view=view
-    )
+        @discord.ui.button(label="✋", style=discord.ButtonStyle.primary)
+        async def paper(self, interaction_button: discord.Interaction, button: discord.ui.Button):
+            await self.process(interaction_button, "✋")
 
+        async def process(self, interaction_button, user_hand):
+            bot_hand = random.choice(list(hands.keys()))
 
-class PvPButton(View):
-    def __init__(self, attacker, defender, hp_data, turn_owner_id):
-        super().__init__(timeout=None)
-        self.attacker = attacker
-        self.defender = defender
-        self.hp_data = hp_data
-        self.turn_owner_id = turn_owner_id
+            if user_hand == bot_hand:
+                result = "🤝 あいこでした！コインの変動はありません。"
+            elif (user_hand, bot_hand) in [("✊", "✌️"), ("✌️", "✋"), ("✋", "✊")]:
+                balance_data[user_id] += 3000
+                result = f"🎉 あなたの勝ち！+3000 GOLD（現在: {balance_data[user_id]}GOLD）"
+            else:
+                balance_data[user_id] -= 3000
+                result = f"😢 負けてしまいました… -3000 GOLD（現在: {balance_data[user_id]}GOLD）"
 
-    Button(label="攻撃", style=discord.ButtonStyle.red)
-    async def attack(self, interaction: discord.Interaction, button: discord.Button):
-        if interaction.user.id != self.turn_owner_id:
-            await interaction.response.send_message("❌ あなたのターンではありません", ephemeral=True)
-            return
+            await interaction_button.response.edit_message(content=f"あなた：{user_hand}　Bot：{bot_hand}\n{result}", view=None)
 
-        damage = random.randint(10, 20)
-        self.hp_data[self.defender.id] -= damage
-        attacker_name = interaction.user.display_name
-        defender_name = self.defender.display_name
-        remaining_hp = self.hp_data[self.defender.id]
-
-        if remaining_hp <= 0:
-            await interaction.response.edit_message(
-                content=f"💥 {attacker_name} の攻撃！\n{defender_name} は {damage} ダメージを受けた\n\n🎉 {attacker_name} の勝利！",
-                view=None
-            )
-            return
-
-        # ターン交代
-        self.turn_owner_id = self.defender.id
-        self.attacker, self.defender = self.defender, self.attacker
-        await interaction.response.edit_message(
-            content=f"💥 {attacker_name} の攻撃！\n{defender_name} は {damage} ダメージを受けた\n\n🩸 {defender_name} の残りHP: {remaining_hp}\n🎮 次は {self.attacker.display_name} のターン！",
-            view=self
-        )
+    await interaction.response.send_message("✊✌️✋ じゃんけんぽん！　ボタンから手を選んでね", view=JankenButton())
 
 
 # --- Flaskで常時起動 ---

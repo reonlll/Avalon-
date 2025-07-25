@@ -123,6 +123,77 @@ async def subtract_gold(interaction: discord.Interaction, user: discord.User, am
         f"💸 {user.mention} から {amount:,} gold を減らしました", ephemeral=True
     )
 
+import discord
+from discord import app_commands
+from discord.ext import commands
+import random
+
+class JankenButton(discord.ui.View):
+    def __init__(self, user_id):
+        super().__init__(timeout=30)
+        self.user_id = user_id
+        self.result = None
+
+    @discord.ui.button(label="✊ グー", style=discord.ButtonStyle.primary)
+    async def rock(self, interaction: discord.Interaction, button: discord.ui.Button):
+        await self.process(interaction, "グー")
+
+    @discord.ui.button(label="✌️ チョキ", style=discord.ButtonStyle.success)
+    async def scissors(self, interaction: discord.Interaction, button: discord.ui.Button):
+        await self.process(interaction, "チョキ")
+
+    @discord.ui.button(label="✋ パー", style=discord.ButtonStyle.danger)
+    async def paper(self, interaction: discord.Interaction, button: discord.ui.Button):
+        await self.process(interaction, "パー")
+
+    async def process(self, interaction: discord.Interaction, player_choice: str):
+        if interaction.user.id != self.user_id:
+            await interaction.response.send_message("これはあなた専用のじゃんけんです！", ephemeral=True)
+            return
+
+        choices = ["グー", "チョキ", "パー"]
+        bot_choice = random.choice(choices)
+
+        result = self.judge(player_choice, bot_choice)
+
+        # ユーザーIDを文字列に変換
+        user_id = str(interaction.user.id)
+
+        if result == "勝ち":
+            balance_data[user_id] = balance_data.get(user_id, 0) + 3000
+        elif result == "負け":
+            balance_data[user_id] = balance_data.get(user_id, 0) - 3000
+
+        save_balance_data()
+
+        await interaction.response.edit_message(
+            content=f"あなた: {player_choice}\nBot: {bot_choice}\n結果: **{result}**\n現在の残高: {balance_data[user_id]}Lydia",
+            view=None
+        )
+
+        self.stop()
+
+    def judge(self, player, bot):
+        if player == bot:
+            return "あいこ"
+        elif (player == "グー" and bot == "チョキ") or \
+             (player == "チョキ" and bot == "パー") or \
+             (player == "パー" and bot == "グー"):
+            return "勝ち"
+        else:
+            return "負け"
+
+@tree.command(name="じゃんけん", description="3000Lydiaでじゃんけん！")
+async def janken_command(interaction: discord.Interaction):
+    user_id = str(interaction.user.id)
+    balance = balance_data.get(user_id, 0)
+
+    if balance < 3000:
+        await interaction.response.send_message("Lydiaが足りません！(3000必要)", ephemeral=True)
+        return
+
+    await interaction.response.send_message("✊✌️✋ じゃんけんスタート！選んでください：", view=JankenButton(interaction.user.id))
+
 @tree.command(name="pvp", description="指定した相手とPvPバトルを開始します", guild=discord.Object(id=GUILD_ID))
 @app_commands.describe(opponent="対戦相手")
 async def pvp(interaction: discord.Interaction, opponent: discord.User):

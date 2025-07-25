@@ -163,6 +163,15 @@ class JankenView(discord.ui.View):
         save_balance_data()
         await interaction.response.send_message(result, ephemeral=True)
 
+# --- /じゃんけんコマンド登録 ---
+@tree.command(name="じゃんけん", description="3000GOLDを賭けてBotとじゃんけん！", guild=discord.Object(id=GUILD_ID))
+async def janken(interaction: discord.Interaction):
+    await interaction.response.send_message(
+        "🕹️ グー・チョキ・パーから選んでください！",
+        view=JankenView(),
+        ephemeral=True
+    )
+
 # --- Flaskで常時起動 ---
 keep_alive()
 bot.run(os.environ['TOKEN'])

@@ -164,28 +164,6 @@ class JankenView(discord.ui.View):
         await interaction.response.send_message(result, ephemeral=True)
 import datetime
 
-# --- 剣カウント用のjsonbin ---
-SWORD_BIN_ID = "あなたの剣Bin IDをここに"
-sword_data = {}
-
-def load_sword_data():
-    url = f"https://api.jsonbin.io/v3/b/{SWORD_BIN_ID}/latest"
-    headers = {"X-Master-Key": API_KEY}
-    res = requests.get(url, headers=headers)
-    if res.status_code == 200:
-        global sword_data
-        sword_data = res.json()["record"]
-    else:
-        print("❌ 剣データの読み込み失敗")
-
-def save_sword_data():
-    url = f"https://api.jsonbin.io/v3/b/{SWORD_BIN_ID}"
-    headers = {
-        "Content-Type": "application/json",
-        "X-Master-Key": API_KEY
-    }
-    requests.put(url, headers=headers, json=sword_data)
-
 # --- /じゃんけんコマンド登録 ---
 @tree.command(name="じゃんけん", description="3000GOLDを賭けてBotとじゃんけん！", guild=discord.Object(id=GUILD_ID))
 async def janken(interaction: discord.Interaction):

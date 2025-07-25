@@ -127,15 +127,6 @@ class JankenView(discord.ui.View):
     def __init__(self):
         super().__init__(timeout=30)
 
-# --- /じゃんけん ---
-@tree.command(name="じゃんけん", description="3000GOLDを賭けてBotとじゃんけん！", guild=discord.Object(id=GUILD_ID))
-async def janken(interaction: discord.Interaction):
-    await interaction.response.send_message(
-        "🕹️ グー・チョキ・パーから選んでください！",
-        view=JankenView(),
-        ephemeral=True  # ←必要ならFalseにしてみんなに見せる
-    )
-
     @discord.ui.button(label="✊", style=discord.ButtonStyle.primary)
     async def rock(self, interaction: discord.Interaction, button: discord.ui.Button):
         await self.process(interaction, "✊")
@@ -152,7 +143,6 @@ async def janken(interaction: discord.Interaction):
         user_id = str(interaction.user.id)
         bot_hand = random.choice(["✊", "✌️", "✋"])
 
-        # GOLDが3000未満ならキャンセル
         if balance_data.get(user_id, 0) < 3000:
             await interaction.response.send_message("❌ 所持GOLDが足りません（3000GOLD必要）", ephemeral=True)
             return
@@ -166,8 +156,8 @@ async def janken(interaction: discord.Interaction):
             balance_data[user_id] -= 3000
             result = f"😢 負けてしまいました... -3000GOLD（Botの手：{bot_hand}）"
 
-        await interaction.response.send_message(result, ephemeral=True)
         save_balance_data()
+        await interaction.response.send_message(result, ephemeral=True)
 
 
 # --- Flaskで常時起動 ---

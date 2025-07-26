@@ -263,6 +263,7 @@ async def setup_gacha_button(interaction: discord.Interaction, channel: discord.
     await channel.send("🎰 **ロールガチャ** に挑戦！ボタンを押して運試ししよう！（30000GOLD）", view=view)
     await interaction.response.send_message(f"✅ ガチャボタンを {channel.mention} に設置しました！", ephemeral=True)
 
+
 @tree.command(name="ロールガチャ", description="30000GOLDを消費してランダムなロールを獲得", guild=discord.Object(id=GUILD_ID))
 async def roll_gacha(interaction: discord.Interaction):
     load_balance_data()
@@ -276,14 +277,8 @@ async def roll_gacha(interaction: discord.Interaction):
     balance_data[user_id] -= 30000
     save_balance_data()
 
-    roles_pool = [
-        "旅人", "みかん🍊", "じぽ", "草ww", "騎士", "泥棒",
-        "ドラゴンボール信者", "ネタ枠", "暗黒騎士", "53"
-    ]
-    selected_role = random.choice(roles_pool)
-
-    if user_id not in user_owned_roles:
-        user_owned_roles[user_id] = []
+    selected_role = random.choice(ROLL_GACHA_LIST)
+    user_owned_roles.setdefault(user_id, [])
     if selected_role not in user_owned_roles[user_id]:
         user_owned_roles[user_id].append(selected_role)
         save_user_roles()
@@ -292,8 +287,9 @@ async def roll_gacha(interaction: discord.Interaction):
         f"🎉 ガチャ結果：**{selected_role}**\nロール一覧で確認できます！",
         ephemeral=True
     )
-    
-@tree.command(name="ロール一覧", description="自分が所持しているロールを確認します", guild=discord.Object(id=GUILD_ID))
+
+
+@tree.command(name="ロール一覧", description="自分が所持しているロールを確認", guild=discord.Object(id=GUILD_ID))
 async def list_roles(interaction: discord.Interaction):
     load_user_roles()
     user_id = str(interaction.user.id)
@@ -301,15 +297,10 @@ async def list_roles(interaction: discord.Interaction):
     if not roles:
         await interaction.response.send_message("🎭 まだロールを獲得していません。", ephemeral=True)
     else:
-        await interaction.response.send_message(
-            f"🎭 あなたの所持ロール：\n" + ", ".join(roles),
-            ephemeral=True
-        )
+        await interaction.response.send_message("🎭 あなたの所持ロール：\n" + ", ".join(roles), ephemeral=True)
 
-from discord import app_commands
 
-# 動的補完：所持ロールから選択候補を出す
-@app_commands.command(name="ロール付与", description="所持しているロールの中から1つを自分に付与")
+@tree.command(name="ロール付与", description="所持しているロールの中から1つを自分に付与", guild=discord.Object(id=GUILD_ID))
 @app_commands.describe(role_name="付与するロール名")
 @app_commands.autocomplete(role_name=lambda interaction, current: autocomplete_owned_roles(interaction, current))
 async def give_role(interaction: discord.Interaction, role_name: str):
@@ -328,29 +319,19 @@ async def give_role(interaction: discord.Interaction, role_name: str):
     else:
         await interaction.response.send_message("❌ サーバーにそのロールが存在しません。", ephemeral=True)
 
-# --- オートコンプリート補助関数 ---
-async def autocomplete_owned_roles(interaction: discord.Interaction, current: str):
-    load_user_roles()
-    user_id = str(interaction.user.id)
-    roles = user_owned_roles.get(user_id, [])
-    return [
-        app_commands.Choice(name=r, value=r)
-        for r in roles if current.lower() in r.lower()
-    ][:25]  # 最大25件まで補完候補表示
-        
+
 @tree.command(name="ロール外し", description="自分のロールを外します（所持情報は保持）", guild=discord.Object(id=GUILD_ID))
 @app_commands.describe(role_name="外すロール名")
 async def remove_role(interaction: discord.Interaction, role_name: str):
-    guild = interaction.guild
-    role = discord.utils.get(guild.roles, name=role_name)
-
-    if role in interaction.user.roles:
+    role = discord.utils.get(interaction.guild.roles, name=role_name)
+    if role and role in interaction.user.roles:
         await interaction.user.remove_roles(role)
         await interaction.response.send_message(f"✅ {role_name} を外しました。", ephemeral=True)
     else:
         await interaction.response.send_message("❌ そのロールは現在付与されていません。", ephemeral=True)
 
-@tree.command(name="ロールを捨てる", description="所持しているロールを完全に削除します", guild=discord.Object(id=GUILD_ID))
+
+@tree.command(name="ロールを捨てる", description="所持しているロールを完全に削除", guild=discord.Object(id=GUILD_ID))
 @app_commands.describe(role_name="削除するロール名")
 async def drop_role(interaction: discord.Interaction, role_name: str):
     load_user_roles()
@@ -364,9 +345,7 @@ async def drop_role(interaction: discord.Interaction, role_name: str):
     roles.remove(role_name)
     user_owned_roles[user_id] = roles
     save_user_roles()
-
     await interaction.response.send_message(f"🗑️ {role_name} を削除しました。", ephemeral=True)
-
 
 # --- Bot起動 ---
 keep_alive()

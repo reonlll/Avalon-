@@ -222,6 +222,47 @@ async def janken(interaction: discord.Interaction):
         ephemeral=True
     )
 
+ROLL_GACHA_LIST = [
+    "旅人", "みかん🍊", "じぽ", "草ww", "騎士",
+    "泥棒", "ドラゴンボール信者", "ネタ枠", "暗黒騎士", "53"
+]
+
+class RoleGachaView(discord.ui.View):
+    def __init__(self):
+        super().__init__(timeout=None)  # 永続ボタン
+
+    @discord.ui.button(label="🎲 ロールガチャを引く！", style=discord.ButtonStyle.primary)
+    async def roll_gacha(self, interaction: discord.Interaction, button: discord.ui.Button):
+        user_id = str(interaction.user.id)
+        load_balance_data()
+        load_user_roles()
+
+        if balance_data.get(user_id, 0) < 30000:
+            await interaction.response.send_message("💰 30000GOLDが必要です。", ephemeral=True)
+            return
+
+        balance_data[user_id] -= 30000
+        result = random.choice(ROLL_GACHA_LIST)
+        user_owned_roles.setdefault(user_id, [])
+        if result not in user_owned_roles[user_id]:
+            user_owned_roles[user_id].append(result)
+
+        save_balance_data()
+        save_user_roles()
+
+        await interaction.response.send_message(f"🎉 ガチャ結果：**{result}** を獲得しました！", ephemeral=True)
+        
+@tree.command(name="ロールガチャ設置", description="ロールガチャのボタンを設置（管理者限定）", guild=discord.Object(id=GUILD_ID))
+@app_commands.describe(channel="ガチャボタンを設置するチャンネル")
+async def setup_gacha_button(interaction: discord.Interaction, channel: discord.TextChannel):
+    if not interaction.user.guild_permissions.administrator:
+        await interaction.response.send_message("❌ 管理者専用コマンドです。", ephemeral=True)
+        return
+
+    view = RoleGachaView()
+    await channel.send("🎰 **ロールガチャ** に挑戦！ボタンを押して運試ししよう！（30000GOLD）", view=view)
+    await interaction.response.send_message(f"✅ ガチャボタンを {channel.mention} に設置しました！", ephemeral=True)
+
 @tree.command(name="ロールガチャ", description="30000GOLDを消費してランダムなロールを獲得", guild=discord.Object(id=GUILD_ID))
 async def roll_gacha(interaction: discord.Interaction):
     load_balance_data()

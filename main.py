@@ -8,6 +8,29 @@ from discord.ui import View, Button
 from keep_alive import keep_alive
 import datetime
 
+# ロール保存用
+ROLE_BIN_ID = "6851e9728960c979a5abb516"
+user_owned_roles = {}
+
+def load_user_roles():
+    url = f"https://api.jsonbin.io/v3/b/{ROLE_BIN_ID}/latest"
+    headers = {"X-Master-Key": API_KEY}
+    res = requests.get(url, headers=headers)
+    if res.status_code == 200:
+        global user_owned_roles
+        user_owned_roles = res.json()["record"]
+    else:
+        print("❌ ロールデータの読み込み失敗")
+
+def save_user_roles():
+    url = f"https://api.jsonbin.io/v3/b/{ROLE_BIN_ID}"
+    headers = {
+        "Content-Type": "application/json",
+        "X-Master-Key": API_KEY
+    }
+    requests.put(url, headers=headers, json=user_owned_roles)
+
+
 # Intent設定
 intents = discord.Intents.default()
 intents.message_content = True
@@ -198,6 +221,82 @@ async def janken(interaction: discord.Interaction):
         view=JankenView(),
         ephemeral=True
     )
+
+@tree.command(name="ロールガチャ", description="30000GOLDを消費してランダムなロールを獲得", guild=discord.Object(id=GUILD_ID))
+async def roll_gacha(interaction: discord.Interaction):
+    load_balance_data()
+    load_user_roles()
+    user_id = str(interaction.user.id)
+
+    if balance_data.get(user_id, 0) < 30000:
+        await interaction.response.send_message("❌ 所持GOLDが足りません（30000GOLD必要）", ephemeral=True)
+        return
+
+    balance_data[user_id] -= 30000
+    save_balance_data()
+
+    roles_pool = [
+        "旅人", "みかん🍊", "じぽ", "草ww", "騎士", "泥棒",
+        "ドラゴンボール信者", "ネタ枠", "暗黒騎士", "53"
+    ]
+    selected_role = random.choice(roles_pool)
+
+    if user_id not in user_owned_roles:
+        user_owned_roles[user_id] = []
+    if selected_role not in user_owned_roles[user_id]:
+        user_owned_roles[user_id].append(selected_role)
+        save_user_roles()
+
+    await interaction.response.send_message(
+        f"🎉 ガチャ結果：**{selected_role}**\nロール一覧で確認できます！",
+        ephemeral=True
+    )
+    
+@tree.command(name="ロール一覧", description="自分が所持しているロールを確認します", guild=discord.Object(id=GUILD_ID))
+async def list_roles(interaction: discord.Interaction):
+    load_user_roles()
+    user_id = str(interaction.user.id)
+    roles = user_owned_roles.get(user_id, [])
+    if not roles:
+        await interaction.response.send_message("🎭 まだロールを獲得していません。", ephemeral=True)
+    else:
+        await interaction.response.send_message(
+            f"🎭 あなたの所持ロール：\n" + ", ".join(roles),
+            ephemeral=True
+        )
+
+@tree.command(name="ロール付与", description="所持しているロールの中から1つを自分に付与", guild=discord.Object(id=GUILD_ID))
+@app_commands.describe(role_name="付与するロール名")
+async def give_role(interaction: discord.Interaction, role_name: str):
+    load_user_roles()
+    user_id = str(interaction.user.id)
+    roles = user_owned_roles.get(user_id, [])
+
+    if role_name not in roles:
+        await interaction.response.send_message("❌ そのロールは所持していません。", ephemeral=True)
+        return
+
+    guild = interaction.guild
+    role = discord.utils.get(guild.roles, name=role_name)
+    if role:
+        await interaction.user.add_roles(role)
+        await interaction.response.send_message(f"✅ {role_name} を付与しました！", ephemeral=True)
+    else:
+        await interaction.response.send_message("❌ サーバーにそのロールが存在しません。", ephemeral=True)
+        
+@tree.command(name="ロール外し", description="自分のロールを外します（所持情報は保持）", guild=discord.Object(id=GUILD_ID))
+@app_commands.describe(role_name="外すロール名")
+async def remove_role(interaction: discord.Interaction, role_name: str):
+    guild = interaction.guild
+    role = discord.utils.get(guild.roles, name=role_name)
+
+    if role in interaction.user.roles:
+        await interaction.user.remove_roles(role)
+        await interaction.response.send_message(f"✅ {role_name} を外しました。", ephemeral=True)
+    else:
+        await interaction.response.send_message("❌ そのロールは現在付与されていません。", ephemeral=True)
+
+
 
 
 # --- Bot起動 ---

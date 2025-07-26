@@ -173,6 +173,63 @@ async def janken(interaction: discord.Interaction):
         ephemeral=True
     )
 
+# すでに使っている設定に合わせてください
+BALANCE_BIN_ID = "685190308960c979a5ab83e4"
+API_KEY = "$2a$10$DUY6hRZaDGFQ1O6ddUbZpuDZY/k0xEA6iX69Ec2Qgc5Y4Rnihr9iO"
+
+last_fortune = {}
+
+fortunes = [
+    ("🌟 大吉", "最高の一日になる予感！", 3000),
+    ("😊 中吉", "いいことがあるかもね。", 1000),
+    ("🙂 小吉", "まあまあ良い感じ。", 0),
+    ("😐 末吉", "ゆっくりいこう。", 0),
+    ("😑 凶", "今日は慎重にね。", 0),
+    ("💀 大凶", "今日は静かに過ごそう…", 0)
+]
+
+def load_balance():
+    res = requests.get(f"https://api.jsonbin.io/v3/b/{BALANCE_BIN_ID}/latest",
+                       headers={"X-Master-Key": API_KEY})
+    return res.json()["record"]
+
+def save_balance(data):
+    requests.put(f"https://api.jsonbin.io/v3/b/{BALANCE_BIN_ID}",
+                 headers={
+                     "Content-Type": "application/json",
+                     "X-Master-Key": API_KEY
+                 },
+                 json=data)
+
+@bot.tree.command(name="運勢", description="今日の運勢を占おう！")
+async def fortune(interaction: discord.Interaction):
+    user_id = str(interaction.user.id)
+    today = datetime.now().date()
+
+    # 1日1回制限
+    if user_id in last_fortune and last_fortune[user_id] == today:
+        await interaction.response.send_message("🔁 今日の運勢はすでに引きました！また明日！")
+        return
+
+    # 運勢を引く
+    result, message, reward = random.choice(fortunes)
+    last_fortune[user_id] = today
+
+    # 通貨処理
+    balances = load_balance()
+    if user_id not in balances:
+        balances[user_id] = 0
+    balances[user_id] += reward
+    save_balance(balances)
+
+    # 結果表示
+    reply = f"🎴 あなたの今日の運勢：**{result}**\n💬 {message}"
+    if reward > 0:
+        reply += f"\n💰 {reward} GOLD（Lydia）を獲得しました！"
+
+    await interaction.response.send_message(reply)
+
+
 # --- Flaskで常時起動 ---
 keep_alive()
 bot.run(os.environ['TOKEN'])

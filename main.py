@@ -201,6 +201,11 @@ def save_balance(data):
                  },
                  json=data)
 
+@bot.event
+async def on_ready():
+    await bot.tree.sync()
+    print(f"✅ ログイン完了：{bot.user}")
+
 @bot.tree.command(name="運勢", description="今日の運勢を占おう！")
 async def fortune(interaction: discord.Interaction):
     user_id = str(interaction.user.id)

@@ -225,7 +225,7 @@ async def fortune(interaction: discord.Interaction):
     # 結果表示
     reply = f"🎴 あなたの今日の運勢：**{result}**\n💬 {message}"
     if reward > 0:
-        reply += f"\n💰 {reward} GOLD（Lydia）を獲得しました！"
+        reply += f"\n💰 {reward} GOLDを獲得しました！"
 
     await interaction.response.send_message(reply)
 

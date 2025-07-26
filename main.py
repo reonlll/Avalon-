@@ -306,8 +306,12 @@ async def list_roles(interaction: discord.Interaction):
             ephemeral=True
         )
 
-@tree.command(name="ロール付与", description="所持しているロールの中から1つを自分に付与", guild=discord.Object(id=GUILD_ID))
+from discord import app_commands
+
+# 動的補完：所持ロールから選択候補を出す
+@app_commands.command(name="ロール付与", description="所持しているロールの中から1つを自分に付与")
 @app_commands.describe(role_name="付与するロール名")
+@app_commands.autocomplete(role_name=lambda interaction, current: autocomplete_owned_roles(interaction, current))
 async def give_role(interaction: discord.Interaction, role_name: str):
     load_user_roles()
     user_id = str(interaction.user.id)
@@ -317,13 +321,22 @@ async def give_role(interaction: discord.Interaction, role_name: str):
         await interaction.response.send_message("❌ そのロールは所持していません。", ephemeral=True)
         return
 
-    guild = interaction.guild
-    role = discord.utils.get(guild.roles, name=role_name)
+    role = discord.utils.get(interaction.guild.roles, name=role_name)
     if role:
         await interaction.user.add_roles(role)
         await interaction.response.send_message(f"✅ {role_name} を付与しました！", ephemeral=True)
     else:
         await interaction.response.send_message("❌ サーバーにそのロールが存在しません。", ephemeral=True)
+
+# --- オートコンプリート補助関数 ---
+async def autocomplete_owned_roles(interaction: discord.Interaction, current: str):
+    load_user_roles()
+    user_id = str(interaction.user.id)
+    roles = user_owned_roles.get(user_id, [])
+    return [
+        app_commands.Choice(name=r, value=r)
+        for r in roles if current.lower() in r.lower()
+    ][:25]  # 最大25件まで補完候補表示
         
 @tree.command(name="ロール外し", description="自分のロールを外します（所持情報は保持）", guild=discord.Object(id=GUILD_ID))
 @app_commands.describe(role_name="外すロール名")

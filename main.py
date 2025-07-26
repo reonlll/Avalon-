@@ -150,18 +150,6 @@ async def fortune(interaction: discord.Interaction):
 
     await interaction.response.send_message(reply)
 
-@bot.event
-async def on_ready():
-    await tree.sync(guild=discord.Object(id=GUILD_ID))  # ギルド用だけ同期
-    await tree.sync()  # すでにあるグローバルコマンドを同期
-
-    # グローバルコマンドを削除
-    global_cmds = await tree.fetch_commands()
-    for cmd in global_cmds:
-        await tree.remove_command(cmd.name)
-
-    print(f"✅ グローバルコマンド削除完了")
-
 # --- Bot起動 ---
 keep_alive()
 bot.run(os.environ["TOKEN"])

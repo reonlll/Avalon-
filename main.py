@@ -350,7 +350,22 @@ async def remove_role(interaction: discord.Interaction, role_name: str):
     else:
         await interaction.response.send_message("❌ そのロールは現在付与されていません。", ephemeral=True)
 
+@tree.command(name="ロールを捨てる", description="所持しているロールを完全に削除します", guild=discord.Object(id=GUILD_ID))
+@app_commands.describe(role_name="削除するロール名")
+async def drop_role(interaction: discord.Interaction, role_name: str):
+    load_user_roles()
+    user_id = str(interaction.user.id)
+    roles = user_owned_roles.get(user_id, [])
 
+    if role_name not in roles:
+        await interaction.response.send_message("❌ そのロールは所持していません。", ephemeral=True)
+        return
+
+    roles.remove(role_name)
+    user_owned_roles[user_id] = roles
+    save_user_roles()
+
+    await interaction.response.send_message(f"🗑️ {role_name} を削除しました。", ephemeral=True)
 
 
 # --- Bot起動 ---

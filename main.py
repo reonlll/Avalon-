@@ -150,6 +150,56 @@ async def fortune(interaction: discord.Interaction):
 
     await interaction.response.send_message(reply)
 
+class JankenView(discord.ui.View):
+    def __init__(self):
+        super().__init__(timeout=30)
+
+    @discord.ui.button(label="✊", style=discord.ButtonStyle.primary)
+    async def rock(self, interaction: discord.Interaction, button: discord.ui.Button):
+        await self.process(interaction, "✊")
+
+    @discord.ui.button(label="✌️", style=discord.ButtonStyle.success)
+    async def scissors(self, interaction: discord.Interaction, button: discord.ui.Button):
+        await self.process(interaction, "✌️")
+
+    @discord.ui.button(label="✋", style=discord.ButtonStyle.danger)
+    async def paper(self, interaction: discord.Interaction, button: discord.ui.Button):
+        await self.process(interaction, "✋")
+
+    async def process(self, interaction: discord.Interaction, user_hand):
+        load_balance_data()  # ← 追加：残高読み込み
+
+        user_id = str(interaction.user.id)
+        bot_hand = random.choice(["✊", "✌️", "✋"])
+
+        # GOLDが3000未満ならキャンセル
+        if balance_data.get(user_id, 0) < 3000:
+            await interaction.response.send_message("❌ 所持GOLDが足りません（3000GOLD必要）", ephemeral=True)
+            return
+
+        # 勝敗判定
+        if user_hand == bot_hand:
+            result = f"🤝 あいこでした！（Botの手：{bot_hand}）"
+        elif (user_hand, bot_hand) in [("✊", "✌️"), ("✌️", "✋"), ("✋", "✊")]:
+            balance_data[user_id] += 3000
+            result = f"🎉 あなたの勝ち！+3000GOLD！（Botの手：{bot_hand}）"
+        else:
+            balance_data[user_id] -= 3000
+            result = f"😢 負けてしまいました... -3000GOLD（Botの手：{bot_hand}）"
+
+        save_balance_data()
+        await interaction.response.send_message(result, ephemeral=True)
+        
+        # --- /じゃんけんコマンド登録 ---
+@tree.command(name="じゃんけん", description="3000GOLDを賭けてBotとじゃんけん！", guild=discord.Object(id=GUILD_ID))
+async def janken(interaction: discord.Interaction):
+    await interaction.response.send_message(
+        "🕹️ グー・チョキ・パーから選んでください！",
+        view=JankenView(),
+        ephemeral=True
+    )
+
+
 # --- Bot起動 ---
 keep_alive()
 bot.run(os.environ["TOKEN"])

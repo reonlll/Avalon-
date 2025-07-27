@@ -427,6 +427,11 @@ class ShisumaGuessButton(discord.ui.Button):
 
         save_balance_data()
         await interaction.response.send_message(result_msg, ephemeral=True)
+        
+        @tree.command(name="指スマ", description="指の本数と合計を予想してBotと勝負！（2000GOLD）", guild=discord.Object(id=GUILD_ID))
+async def shisuma(interaction: discord.Interaction):
+    await interaction.response.send_message("🖐️ まず出す指の本数を選んでください（0〜2）", view=ShisumaView(interaction.user.id), ephemeral=True)
+        
 # --- Bot起動 ---
 keep_alive()
 bot.run(os.environ["TOKEN"])

@@ -347,6 +347,73 @@ async def drop_role(interaction: discord.Interaction, role_name: str):
     save_user_roles()
     await interaction.response.send_message(f"🗑️ {role_name} を削除しました。", ephemeral=True)
 
+from discord import ui
+
+class ShisumaView(discord.ui.View):
+    def __init__(self, user_id):
+        super().__init__(timeout=60)
+        self.user_id = user_id
+        self.user_fingers = None
+
+        for i in range(3):
+            self.add_item(ShisumaFingerButton(label=f"{i}本", value=i, view=self))
+
+class ShisumaFingerButton(discord.ui.Button):
+    def __init__(self, label, value, view):
+        super().__init__(label=label, style=discord.ButtonStyle.primary)
+        self.value = value
+        self.main_view = view
+
+    async def callback(self, interaction: discord.Interaction):
+        if str(interaction.user.id) != str(self.main_view.user_id):
+            await interaction.response.send_message("これはあなた専用のゲームです。", ephemeral=True)
+            return
+
+        self.main_view.user_fingers = self.value
+        await interaction.response.send_message("🎯 合計の予想を選んでください", view=ShisumaGuessView(self.main_view.user_id, self.value), ephemeral=True)
+
+class ShisumaGuessView(discord.ui.View):
+    def __init__(self, user_id, user_fingers):
+        super().__init__(timeout=60)
+        self.user_id = user_id
+        self.user_fingers = user_fingers
+
+        for i in range(5):
+            self.add_item(ShisumaGuessButton(label=f"{i}", value=i, view=self))
+
+class ShisumaGuessButton(discord.ui.Button):
+    def __init__(self, label, value, view):
+        super().__init__(label=label, style=discord.ButtonStyle.success)
+        self.value = value
+        self.main_view = view
+
+    async def callback(self, interaction: discord.Interaction):
+        if str(interaction.user.id) != str(self.main_view.user_id):
+            await interaction.response.send_message("これはあなた専用のゲームです。", ephemeral=True)
+            return
+
+        user_id = str(interaction.user.id)
+        load_balance_data()
+
+        if balance_data.get(user_id, 0) < 2000:
+            await interaction.response.send_message("💰 2000GOLDが必要です。", ephemeral=True)
+            return
+
+        bot_fingers = random.randint(0, 2)
+        total = self.main_view.user_fingers + bot_fingers
+        guess = self.value
+
+        result_msg = f"🧍‍♂️ あなたの指: {self.main_view.user_fingers}本\n🤖 Botの指: {bot_fingers}本\n🎯 合計: {total}（あなたの予想: {guess}）\n"
+
+        if total == guess:
+            balance_data[user_id] += 2000
+            result_msg += "🎉 的中！+2000GOLD獲得！"
+        else:
+            balance_data[user_id] -= 2000
+            result_msg += "💥 外れ！-2000GOLD失いました。"
+
+        save_balance_data()
+        await interaction.response.send_message(result_msg, ephemeral=True)
 # --- Bot起動 ---
 keep_alive()
 bot.run(os.environ["TOKEN"])

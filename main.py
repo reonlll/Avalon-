@@ -300,9 +300,22 @@ async def list_roles(interaction: discord.Interaction):
         await interaction.response.send_message("🎭 あなたの所持ロール：\n" + ", ".join(roles), ephemeral=True)
 
 
+from discord import app_commands
+
+# 🔄 オートコンプリート補助関数（必ず async def にする）
+async def autocomplete_owned_roles(interaction: discord.Interaction, current: str):
+    load_user_roles()
+    user_id = str(interaction.user.id)
+    roles = user_owned_roles.get(user_id, [])
+    return [
+        app_commands.Choice(name=r, value=r)
+        for r in roles if current.lower() in r.lower()
+    ][:25]  # 最大25件まで補完
+
+# 🎁 ロール付与コマンド（補完付き）
 @tree.command(name="ロール付与", description="所持しているロールの中から1つを自分に付与", guild=discord.Object(id=GUILD_ID))
 @app_commands.describe(role_name="付与するロール名")
-@app_commands.autocomplete(role_name=lambda interaction, current: autocomplete_owned_roles(interaction, current))
+@app_commands.autocomplete(role_name=autocomplete_owned_roles)  # 🔄 修正済み！
 async def give_role(interaction: discord.Interaction, role_name: str):
     load_user_roles()
     user_id = str(interaction.user.id)

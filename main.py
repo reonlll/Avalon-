@@ -432,6 +432,76 @@ class ShisumaGuessButton(discord.ui.Button):
 async def shisuma(interaction: discord.Interaction):
     await interaction.response.send_message("🖐️ まず出す指の本数を選んでください（0〜2）", view=ShisumaView(interaction.user.id), ephemeral=True)
         
+import discord
+from discord import app_commands
+from discord.ext import commands
+import random
+
+# プレイヤーごとのPvPステート管理
+pvp_sessions = {}
+
+class PvPView(discord.ui.View):
+    def __init__(self, attacker, defender):
+        super().__init__(timeout=None)
+        self.attacker = attacker
+        self.defender = defender
+
+    @discord.ui.button(label="⚔️ 攻撃", style=discord.ButtonStyle.danger)
+    async def attack(self, interaction: discord.Interaction, button: discord.ui.Button):
+        session = pvp_sessions.get((self.attacker.id, self.defender.id))
+        if not session:
+            await interaction.response.send_message("戦闘が見つかりません。", ephemeral=True)
+            return
+
+        if interaction.user != session["turn"]:
+            await interaction.response.send_message("あなたのターンではありません。", ephemeral=True)
+            return
+
+        damage = random.randint(10, 25)
+        target = session["defender"] if interaction.user == session["attacker"] else session["attacker"]
+        session["hp"][target.id] -= damage
+
+        msg = f"💥 {interaction.user.mention} が {target.mention} に **{damage}** ダメージ！\n"
+        msg += f"🩸 {session['attacker'].mention}：{session['hp'][session['attacker'].id]} HP\n"
+        msg += f"🩸 {session['defender'].mention}：{session['hp'][session['defender'].id]} HP\n"
+
+        # 勝敗チェック
+        if session["hp"][target.id] <= 0:
+            msg += f"🏆 {interaction.user.mention} の勝利！"
+            del pvp_sessions[(self.attacker.id, self.defender.id)]
+            self.disable_all_items()
+            await interaction.response.edit_message(content=msg, view=self)
+        else:
+            # ターン交代
+            session["turn"] = target
+            await interaction.response.edit_message(content=msg + f"\n🎯 次のターン：{target.mention}", view=self)
+
+@tree.command(name="pvp", description="指定した相手とPvPバトルを開始する")
+@app_commands.describe(opponent="対戦相手を選んでください")
+async def pvp(interaction: discord.Interaction, opponent: discord.Member):
+    if opponent.bot or opponent == interaction.user:
+        await interaction.response.send_message("無効な対戦相手です。", ephemeral=True)
+        return
+
+    attacker = interaction.user
+    defender = opponent
+    pvp_sessions[(attacker.id, defender.id)] = {
+        "attacker": attacker,
+        "defender": defender,
+        "hp": {
+            attacker.id: 100,
+            defender.id: 100
+        },
+        "turn": attacker
+    }
+
+    view = PvPView(attacker, defender)
+    await interaction.response.send_message(
+        f"⚔️ {attacker.mention} vs {defender.mention} のバトル開始！\n🎯 最初のターン：{attacker.mention}",
+        view=view
+    )
+
+
 # --- Bot起動 ---
 keep_alive()
 bot.run(os.environ["TOKEN"])

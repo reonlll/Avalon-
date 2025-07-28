@@ -496,6 +496,11 @@ async def pvp(interaction: discord.Interaction, opponent: discord.Member):
         view=view
     )
 
+@tree.command(name="コマンド一覧", description="登録済みのスラッシュコマンド一覧を表示")
+async def show_commands(interaction: discord.Interaction):
+    commands = await tree.fetch_commands(guild=discord.Object(id=GUILD_ID))
+    await interaction.response.send_message("\n".join(f"/{cmd.name}" for cmd in commands))
+
 
 # --- Bot起動 ---
 keep_alive()

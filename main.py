@@ -432,11 +432,6 @@ class ShisumaGuessButton(discord.ui.Button):
 async def shisuma(interaction: discord.Interaction):
     await interaction.response.send_message("🖐️ まず出す指の本数を選んでください（0〜2）", view=ShisumaView(interaction.user.id), ephemeral=True)
         
-import discord
-from discord import app_commands
-from discord.ext import commands
-import random
-
 # プレイヤーごとのPvPステート管理
 pvp_sessions = {}
 

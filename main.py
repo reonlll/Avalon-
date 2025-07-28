@@ -65,12 +65,6 @@ def save_balance_data():
     }
     requests.put(url, headers=headers, json=balance_data)
 
-# 起動時処理
-@bot.event
-async def on_ready():
-    await tree.sync(guild=discord.Object(id=GUILD_ID))
-    print(f"✅ スラッシュコマンド同期完了: {bot.user}")
-
 # /残高
 @tree.command(name="残高", description="自分の所持GOLDを確認します", guild=discord.Object(id=GUILD_ID))
 async def check_balance(interaction: discord.Interaction):

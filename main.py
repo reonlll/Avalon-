@@ -501,6 +501,10 @@ async def show_commands(interaction: discord.Interaction):
     commands = await tree.fetch_commands(guild=discord.Object(id=GUILD_ID))
     await interaction.response.send_message("\n".join(f"/{cmd.name}" for cmd in commands))
 
+@bot.event
+async def on_ready():
+    await tree.sync(guild=discord.Object(id=GUILD_ID))  # ギルドID指定
+    print(f"{bot.user} がログインしました。")
 
 # --- Bot起動 ---
 keep_alive()

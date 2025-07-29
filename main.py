@@ -524,6 +524,21 @@ async def pvp(interaction: discord.Interaction, opponent: discord.Member):
         view=view
     )
 
+damage = random.randint(10, 25)
+is_critical = random.random() < 0.2
+if is_critical:
+    damage = int(damage * 1.5)
+
+target = session["defender"] if interaction.user == session["attacker"] else session["attacker"]
+session["hp"][target.id] -= damage
+
+msg = f"💥 {interaction.user.mention} が {target.mention} に **{damage}** ダメージ！\n"
+if is_critical:
+    msg += "🔥 **クリティカルヒット！**\n"
+msg += f"🩸 {session['attacker'].mention}：{render_hp_bar(session['hp'][session['attacker'].id])} ({session['hp'][session['attacker'].id]} HP)\n"
+msg += f"🩸 {session['defender'].mention}：{render_hp_bar(session['hp'][session['defender'].id])} ({session['hp'][session['defender'].id]} HP)\n"
+
+
 @tree.command(name="コマンド一覧", description="登録済みのスラッシュコマンド一覧を表示")
 async def show_commands(interaction: discord.Interaction):
     commands = await tree.fetch_commands(guild=discord.Object(id=GUILD_ID))

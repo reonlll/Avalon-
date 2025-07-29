@@ -465,7 +465,7 @@ class PvPView(discord.ui.View):
             session["turn"] = target
             await interaction.response.edit_message(content=msg + f"\n🎯 次のターン：{target.mention}", view=self)
 
-@tree.command(name="pvp", description="指定した相手とPvPバトルを開始する")
+@tree.command(name="pvp", description="指定した相手とPvPバトルを開始する", guild=discord.Object(id=GUILD_ID))
 @app_commands.describe(opponent="対戦相手を選んでください")
 async def pvp(interaction: discord.Interaction, opponent: discord.Member):
     if opponent.bot or opponent == interaction.user:

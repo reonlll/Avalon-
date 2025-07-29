@@ -429,6 +429,40 @@ async def shisuma(interaction: discord.Interaction):
 # プレイヤーごとのPvPステート管理
 pvp_sessions = {}
 
+class PvPRequestView(discord.ui.View):
+    def __init__(self, attacker, defender):
+        super().__init__(timeout=60)
+        self.attacker = attacker
+        self.defender = defender
+
+    @discord.ui.button(label="✅ 承諾", style=discord.ButtonStyle.success)
+    async def accept(self, interaction: discord.Interaction, button: discord.ui.Button):
+        if interaction.user != self.defender:
+            await interaction.response.send_message("あなたへのリクエストではありません。", ephemeral=True)
+            return
+
+        # 対戦セッション作成
+        pvp_sessions[(self.attacker.id, self.defender.id)] = {
+            "attacker": self.attacker,
+            "defender": self.defender,
+            "hp": {
+                self.attacker.id: 100,
+                self.defender.id: 100
+            },
+            "turn": self.attacker
+        }
+
+        view = PvPView(self.attacker, self.defender)
+        await interaction.message.edit(content=f"⚔️ {self.attacker.mention} vs {self.defender.mention} のバトル開始！\n🎯 最初のターン：{self.attacker.mention}", view=view)
+
+    @discord.ui.button(label="❌ 拒否", style=discord.ButtonStyle.danger)
+    async def reject(self, interaction: discord.Interaction, button: discord.ui.Button):
+        if interaction.user != self.defender:
+            await interaction.response.send_message("あなたへのリクエストではありません。", ephemeral=True)
+            return
+
+        await interaction.message.edit(content="❌ 対戦リクエストは拒否されました。", view=None)
+
 class PvPView(discord.ui.View):
     def __init__(self, attacker, defender):
         super().__init__(timeout=None)

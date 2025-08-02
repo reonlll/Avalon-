@@ -566,7 +566,7 @@ async def on_ready():
     print(f"{bot.user} がログインしました。")
 
 import os
-TOKEN = os.environ.get("DISCORD_TOKEN")
+TOKEN = os.environ.get("TOKEN")
 bot.run(TOKEN)
 
 # --- Bot起動 ---

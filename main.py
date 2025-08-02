@@ -539,6 +539,33 @@ msg += f"🩸 {session['attacker'].mention}：{render_hp_bar(session['hp'][sessi
 msg += f"🩸 {session['defender'].mention}：{render_hp_bar(session['hp'][session['defender'].id])} ({session['hp'][session['defender'].id]} HP)\n"
 
 
+CHARACTER_DATA = {
+    "ランスロット": {
+        "max_hp": 120,
+        "attack": 25,
+        "defense": 20,
+        "speed": 15,
+        "skills": {
+            "ホーリーブレード": {"pp": 3, "desc": "敵単体に大ダメージ（攻撃力×1.8）"},
+            "騎士の誓い": {"pp": 2, "desc": "味方の防御+10（3ターン）"},
+            "カウンター構え": {"pp": 2, "desc": "受けたダメージの50%を反射（1ターン）"},
+            "最後の突撃": {"pp": 1, "desc": "HP半分以下時、攻撃力×2.5ダメージ"},
+        }
+    }
+}
+
+battles = {
+    (attacker_id, defender_id): {
+        "attacker": discord.Member,
+        "defender": discord.Member,
+        "hp": {user_id: 120, ...},
+        "pp": {user_id: {"ホーリーブレード": 3, ...}},
+        "turn": attacker,  # 現在のターン
+        "character": {user_id: "ランスロット"},
+    }
+}
+
+
 @tree.command(name="コマンド一覧", description="登録済みのスラッシュコマンド一覧を表示")
 async def show_commands(interaction: discord.Interaction):
     commands = await tree.fetch_commands(guild=discord.Object(id=GUILD_ID))

@@ -35,13 +35,16 @@ def has_character(user_id: int, character_name: str) -> bool:
     """指定ユーザーがそのキャラを所持しているか確認"""
     return character_name in user_characters.get(str(user_id), [])
 
-def load_character_data():
-    global user_characters
-    try:
-        with open("characters.json", "r", encoding="utf-8") as f:
-            user_characters = json.load(f)
-    except FileNotFoundError:
-        user_characters = {}
+data = load_character_data()
+if user_id not in data["users"]:
+    data["users"][user_id] = {"owned": []}
+
+if character in data["users"][user_id]["owned"]:
+    await interaction.response.send_message(f"{user.mention} はすでに {character} を所持しています。", ephemeral=True)
+    return
+
+data["users"][user_id]["owned"].append(character)
+save_character_data(data)
 
 # Intent設定
 intents = discord.Intents.default()

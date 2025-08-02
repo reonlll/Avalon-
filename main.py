@@ -1,4 +1,4 @@
-import discord
+=import discord
 from discord.ext import commands
 from discord import app_commands
 import os
@@ -549,7 +549,6 @@ if is_critical:
 msg += f"🩸 {session['attacker'].mention}：{render_hp_bar(session['hp'][session['attacker'].id])} ({session['hp'][session['attacker'].id]} HP)\n"
 msg += f"🩸 {session['defender'].mention}：{render_hp_bar(session['hp'][session['defender'].id])} ({session['hp'][session['defender'].id]} HP)\n"
 
-
 CHARACTER_DATA = {
     "ランスロット": {
         "max_hp": 120,
@@ -565,13 +564,26 @@ CHARACTER_DATA = {
     }
 }
 
+# 仮のユーザーIDとオブジェクトを使った例
+attacker_id = 111111111111111111
+defender_id = 222222222222222222
+user_id = attacker_id  # 今回の例では仮にこの人のデータだけ定義
+attacker = "attacker"  # 仮の文字列（オブジェクトに差し替えてOK）
+
 battles = {
     (attacker_id, defender_id): {
-        "attacker": discord.Member,
-        "defender": discord.Member,
+        "attacker": attacker,
+        "defender": "defender",
         "hp": {user_id: 120},
-        "pp": {user_id: {"ホーリーブレード": 3, ...}},
-        "turn": attacker,  # 現在のターン
+        "pp": {
+            user_id: {
+                "ホーリーブレード": 3,
+                "騎士の誓い": 2,
+                "カウンター構え": 2,
+                "最後の突撃": 1
+            }
+        },
+        "turn": attacker,
         "character": {user_id: "ランスロット"},
     }
 }

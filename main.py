@@ -7,6 +7,7 @@ import random
 from discord.ui import View, Button
 from keep_alive import keep_alive
 import datetime
+import json
 
 # ロール保存用
 ROLE_BIN_ID = "6851e9728960c979a5abb516"

@@ -34,6 +34,14 @@ def has_character(user_id: int, character_name: str) -> bool:
     """指定ユーザーがそのキャラを所持しているか確認"""
     return character_name in user_characters.get(str(user_id), [])
 
+def load_character_data():
+    global user_characters
+    try:
+        with open("characters.json", "r", encoding="utf-8") as f:
+            user_characters = json.load(f)
+    except FileNotFoundError:
+        user_characters = {}
+
 # Intent設定
 intents = discord.Intents.default()
 intents.message_content = True
@@ -567,6 +575,73 @@ battles = {
         "character": {user_id: "ランスロット"},
     }
 }
+
+@tree.command(name="キャラ情報", description="育成中のキャラの詳細を表示")
+async def show_active_character(interaction: discord.Interaction):
+    user_id = str(interaction.user.id)
+
+    # キャラが選ばれていない場合
+    if user_id not in active_character:
+        await interaction.response.send_message("⚠️ 育成中のキャラが設定されていません。", ephemeral=True)
+        return
+
+    char_name = active_character[user_id]
+
+    # 所持確認
+    if not has_character(user_id, char_name):
+        await interaction.response.send_message("⚠️ そのキャラは所持していません。", ephemeral=True)
+        return
+
+    # ステータス表示
+    data = character_status.get(user_id, {}).get(char_name)
+    if not data:
+        await interaction.response.send_message("⚠️ キャラデータが見つかりません。", ephemeral=True)
+        return
+
+    hp = data["current_hp"]
+    level = data["level"]
+    exp = data["exp"]
+    pp_list = data["pp"]
+    skills = CHARACTER_DATA[char_name]["skills"]
+
+    msg = f"📘 **{char_name}** 情報\n"
+    msg += f"🧬 レベル: {level} / 20\n"
+    msg += f"💖 HP: {hp} / {CHARACTER_DATA[char_name]['max_hp']}\n"
+    msg += f"✨ EXP: {exp}\n"
+    msg += f"🔧 スキル:\n"
+
+    for idx, skill in enumerate(skills):
+        msg += f"　{skill['name']} (残り {pp_list[idx]}回 / 威力: {skill['power']})\n"
+
+    await interaction.response.send_message(msg, ephemeral=True)
+    
+@tree.command(name="キャラ情報", description="育成中のキャラのステータスとスキルを確認する", guild=discord.Object(id=GUILD_ID))
+async def character_info(interaction: discord.Interaction):
+    user_id = str(interaction.user.id)
+
+    # データ読み込み（例：JSONファイルやjsonbinから）
+    load_character_data()
+
+    if user_id not in user_characters:
+        await interaction.response.send_message("❌ 現在育成中のキャラがいません。", ephemeral=True)
+        return
+
+    char = user_characters[user_id]
+    name = char["name"]
+    level = char["level"]
+    exp = char["exp"]
+    skills = char.get("skills", [])
+
+    skill_text = "\n".join([f"・{s['name']}（PP: {s['pp']}）" for s in skills]) if skills else "（スキルなし）"
+
+    embed = discord.Embed(title=f"🧝 キャラ情報：{name}", color=0x33ccff)
+    embed.add_field(name="📈 レベル", value=str(level), inline=True)
+    embed.add_field(name="🔋 経験値", value=f"{exp} / 100", inline=True)
+    embed.add_field(name="🛠 スキル", value=skill_text, inline=False)
+
+
+
+    await interaction.response.send_message(embed=embed, ephemeral=True)
 
 
 @tree.command(name="コマンド一覧", description="登録済みのスラッシュコマンド一覧を表示")

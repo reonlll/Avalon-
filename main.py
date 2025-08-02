@@ -442,165 +442,89 @@ async def shisuma(interaction: discord.Interaction):
     await interaction.response.send_message("🖐️ まず出す指の本数を選んでください（0〜2）", view=ShisumaView(interaction.user.id), ephemeral=True)
         
 
-CHARACTER_DATA = {
-    "ランスロット": {
-        "max_hp": 120,
-        "attack": 25,
-        "defense": 20,
-        "speed": 15,
-        "skills": {
-            "ホーリーブレード": {"pp": 3, "desc": "敵単体に大ダメージ（攻撃力×1.8）"},
-            "騎士の誓い": {"pp": 2, "desc": "味方の防御+10（3ターン）"},
-            "カウンター構え": {"pp": 2, "desc": "受けたダメージの50%を反射（1ターン）"},
-            "最後の突撃": {"pp": 1, "desc": "HP半分以下時、攻撃力×2.5ダメージ"},
-        }
-    }
-}
-
-# 仮のユーザーIDとオブジェクトを使った例
-attacker_id = 111111111111111111
-defender_id = 222222222222222222
-user_id = attacker_id  # 今回の例では仮にこの人のデータだけ定義
-attacker = "attacker"  # 仮の文字列（オブジェクトに差し替えてOK）
-
-battles = {
-    (attacker_id, defender_id): {
-        "attacker": attacker,
-        "defender": "defender",
-        "hp": {user_id: 120},
-        "pp": {
-            user_id: {
-                "ホーリーブレード": 3,
-                "騎士の誓い": 2,
-                "カウンター構え": 2,
-                "最後の突撃": 1
-            }
-        },
-        "turn": attacker,
-        "character": {user_id: "ランスロット"},
-    }
-}
-
-@tree.command(name="キャラ情報", description="育成中のキャラの詳細を表示")
-async def show_active_character(interaction: discord.Interaction):
-    user_id = str(interaction.user.id)
-
-    # キャラが選ばれていない場合
-    if user_id not in active_character:
-        await interaction.response.send_message("⚠️ 育成中のキャラが設定されていません。", ephemeral=True)
-        return
-
-    char_name = active_character[user_id]
-
-    # 所持確認
-    if not has_character(user_id, char_name):
-        await interaction.response.send_message("⚠️ そのキャラは所持していません。", ephemeral=True)
-        return
-
-    # ステータス表示
-    data = character_status.get(user_id, {}).get(char_name)
-    if not data:
-        await interaction.response.send_message("⚠️ キャラデータが見つかりません。", ephemeral=True)
-        return
-
-    hp = data["current_hp"]
-    level = data["level"]
-    exp = data["exp"]
-    pp_list = data["pp"]
-    skills = CHARACTER_DATA[char_name]["skills"]
-
-    msg = f"📘 **{char_name}** 情報\n"
-    msg += f"🧬 レベル: {level} / 20\n"
-    msg += f"💖 HP: {hp} / {CHARACTER_DATA[char_name]['max_hp']}\n"
-    msg += f"✨ EXP: {exp}\n"
-    msg += f"🔧 スキル:\n"
-
-    for idx, skill in enumerate(skills):
-        msg += f"　{skill['name']} (残り {pp_list[idx]}回 / 威力: {skill['power']})\n"
-
-    await interaction.response.send_message(msg, ephemeral=True)
-    
-@tree.command(name="キャラ情報", description="育成中のキャラのステータスとスキルを確認する", guild=discord.Object(id=GUILD_ID))
-async def character_info(interaction: discord.Interaction):
-    user_id = str(interaction.user.id)
-
-    # データ読み込み（例：JSONファイルやjsonbinから）
-    load_character_data()
-
-    if user_id not in user_characters:
-        await interaction.response.send_message("❌ 現在育成中のキャラがいません。", ephemeral=True)
-        return
-
-    char = user_characters[user_id]
-    name = char["name"]
-    level = char["level"]
-    exp = char["exp"]
-    skills = char.get("skills", [])
-
-    skill_text = "\n".join([f"・{s['name']}（PP: {s['pp']}）" for s in skills]) if skills else "（スキルなし）"
-
-    embed = discord.Embed(title=f"🧝 キャラ情報：{name}", color=0x33ccff)
-    embed.add_field(name="📈 レベル", value=str(level), inline=True)
-    embed.add_field(name="🔋 経験値", value=f"{exp} / 100", inline=True)
-    embed.add_field(name="🛠 スキル", value=skill_text, inline=False)
-
-
-
-    await interaction.response.send_message(embed=embed, ephemeral=True)
-
-DATA_FILE = "characters.json"
-
-# データを読み込む
-def load_data():
-    if not os.path.exists(DATA_FILE):
-        with open(DATA_FILE, "w", encoding="utf-8") as f:
-            json.dump({"users": {}}, f, ensure_ascii=False, indent=4)
-    with open(DATA_FILE, "r", encoding="utf-8") as f:
-        return json.load(f)
-
-# データを保存する
-def save_data(data):
-    with open(DATA_FILE, "w", encoding="utf-8") as f:
-        json.dump(data, f, ensure_ascii=False, indent=4)
-
-# 例: ランスロットを追加
-def add_lancelot(user_id):
-    data = load_data()
-    if user_id not in data["users"]:
-        data["users"][user_id] = {
-            "current": "ランスロット",
-            "characters": {
-                "ランスロット": {
-                    "level": 1,
-                    "exp": 0,
-                    "skills": [
-                        {"name": "秘剣・幻影突き", "pp": 3},
-                        {"name": "聖騎士の誓い", "pp": 2},
-                        {"name": "光速斬り", "pp": 3},
-                        {"name": "無双の刃", "pp": 1}
-                    ]
-                }
-            }
-        }
-        save_data(data)
-        print(f"✅ {user_id} にランスロットを付与しました。")
-
-# 動作確認
-add_lancelot("123456789012345678")
-
-from discord import app_commands
-import json
 import discord
+from discord.ext import commands
+from discord import app_commands
+import os
+import requests
+from typing import List
+from keep_alive import keep_alive
 
-CHARACTER_FILE = "characters.json"
+# ---- 設定 ----
+GUILD_ID = 1389167820553588797
+CHARACTER_BIN_ID = "688db55ef7e7a370d1f212b0"
+API_KEY = "$2a$10$DUY6hRZaDGFQ1O6ddUbZpuDZY/k0xEA6iX69Ec2Qgc5Y4Rnihr9iO"
 
+intents = discord.Intents.default()
+intents.message_content = True
+intents.members = True
+
+bot = commands.Bot(command_prefix="!", intents=intents)
+tree = bot.tree
+
+# ---- jsonbin操作 ----
 def load_character_data():
-    with open(CHARACTER_FILE, "r", encoding="utf-8") as f:
-        return json.load(f)
+    url = f"https://api.jsonbin.io/v3/b/{CHARACTER_BIN_ID}/latest"
+    headers = {"X-Master-Key": API_KEY}
+    response = requests.get(url, headers=headers)
+    return response.json()["record"]
 
 def save_character_data(data):
-    with open(CHARACTER_FILE, "w", encoding="utf-8") as f:
-        json.dump(data, f, ensure_ascii=False, indent=4)
+    url = f"https://api.jsonbin.io/v3/b/{CHARACTER_BIN_ID}"
+    headers = {
+        "Content-Type": "application/json",
+        "X-Master-Key": API_KEY
+    }
+    requests.put(url, headers=headers, json=data)
+
+# ---- キャラ付与 ----
+@tree.command(name="キャラ付与", description="指定ユーザーにキャラを付与します（管理者専用）")
+@app_commands.describe(user="キャラを付与する相手", character="付与するキャラ名")
+@app_commands.autocomplete(character=lambda interaction, current: character_autocomplete(current))
+async def give_character(interaction: discord.Interaction, user: discord.Member, character: str):
+    if not interaction.user.guild_permissions.administrator:
+        await interaction.response.send_message("このコマンドは管理者専用です。", ephemeral=True)
+        return
+
+    valid_characters = ["ランスロット", "ガウェイン", "トリスタン", "パーシバル", "モードレッド"]
+    if character not in valid_characters:
+        await interaction.response.send_message(f"❌ 無効なキャラ名です。利用可能: {', '.join(valid_characters)}", ephemeral=True)
+        return
+
+    user_id = str(user.id)
+    data = load_character_data()
+
+    if user_id not in data["users"]:
+        data["users"][user_id] = {
+            "current": character,
+            "characters": {}
+        }
+
+    if character in data["users"][user_id]["characters"]:
+        await interaction.response.send_message(f"{user.mention} はすでに {character} を所持しています。", ephemeral=True)
+        return
+
+    # ランスロットだけ先に実装済み
+    if character == "ランスロット":
+        data["users"][user_id]["characters"][character] = {
+            "level": 1,
+            "exp": 0,
+            "skills": [
+                {"name": "秘剣・幻影突き", "pp": 3},
+                {"name": "聖騎士の誓い", "pp": 2},
+                {"name": "光速斬り", "pp": 3},
+                {"name": "無双の刃", "pp": 1}
+            ]
+        }
+
+    save_character_data(data)
+    await interaction.response.send_message(f"✅ {user.mention} に {character} を付与しました。")
+
+# ---- キャラ情報 ----
+@tree.command(name="キャラ情報", description="現在育成中のキャラの情報を表示します")
+async def char_info(interaction: discord.Interaction):
+    user_id = str(interaction.user.id)
+    data = load_character_data()
 
     if user_id not in data["users"]:
         await interaction.response.send_message("キャラが登録されていません。", ephemeral=True)
@@ -613,7 +537,7 @@ def save_character_data(data):
     exp = char_info["exp"]
     skills = char_info["skills"]
 
-    skill_list = "\n".join([f"- {skill['name']} (使用可能数: {skill['pp']})" for skill in skills])
+    skill_list = "\n".join([f"- {skill['name']} (PP: {skill['pp']})" for skill in skills])
 
     embed = discord.Embed(
         title=f"🧬 {char_name} の情報",
@@ -622,53 +546,7 @@ def save_character_data(data):
     )
     await interaction.response.send_message(embed=embed)
 
-def add_lancelot(user_id):
-    data = load_character_data()
-    if user_id not in data["users"]:
-        data["users"][user_id] = {
-            "current": "ランスロット",
-            "characters": {
-                "ランスロット": {
-                    "level": 1,
-                    "exp": 0,
-                    "skills": [
-                        {"name": "秘剣・幻影突き", "pp": 3},
-                        {"name": "聖騎士の誓い", "pp": 2},
-                        {"name": "光速斬り", "pp": 3},
-                        {"name": "無双の刃", "pp": 1}
-                    ]
-                }
-            }
-        }
-        save_character_data(data)
-        
-@tree.command(name="キャラ付与", description="指定したユーザーにキャラを付与します（管理者専用）")
-@app_commands.describe(user="キャラを付与する相手", character="付与するキャラ名")
-@app_commands.autocomplete(character=lambda interaction, current: character_autocomplete(current))
-async def give_character(interaction: discord.Interaction, user: discord.Member, character: str):
-    if not interaction.user.guild_permissions.administrator:
-        await interaction.response.send_message("このコマンドは管理者専用です。", ephemeral=True)
-        return
-
-    valid_characters = ["ランスロット", "ガウェイン", "トリスタン", "パーシバル", "モードレッド"]
-
-    if character not in valid_characters:
-        await interaction.response.send_message(f"❌ 無効なキャラ名です。利用可能なキャラ: {', '.join(valid_characters)}", ephemeral=True)
-        return
-
-    user_id = str(user.id)
-    if user_id not in character_data:
-        character_data[user_id] = {"owned": []}
-
-    if character in character_data[user_id]["owned"]:
-        await interaction.response.send_message(f"{user.mention} はすでに {character} を所持しています。", ephemeral=True)
-        return
-
-    character_data[user_id]["owned"].append(character)
-    save_character_data()
-
-    await interaction.response.send_message(f"✅ {user.mention} に {character} を付与しました。")
-
+# ---- オートコンプリート ----
 async def character_autocomplete(current: str) -> List[app_commands.Choice[str]]:
     all_characters = ["ランスロット", "ガウェイン", "トリスタン", "パーシバル", "モードレッド"]
     return [
@@ -676,6 +554,15 @@ async def character_autocomplete(current: str) -> List[app_commands.Choice[str]]
         for char in all_characters
         if current.lower() in char.lower()
     ]
+
+# ---- Bot起動 ----
+@bot.event
+async def on_ready():
+    await tree.sync(guild=discord.Object(id=GUILD_ID))
+    print(f"{bot.user} が起動しました。")
+
+keep_alive()
+bot.run(os.environ["TOKEN"])
 
 @tree.command(name="コマンド一覧", description="登録済みのスラッシュコマンド一覧を表示")
 async def show_commands(interaction: discord.Interaction):

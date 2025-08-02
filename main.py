@@ -569,7 +569,7 @@ battles = {
     (attacker_id, defender_id): {
         "attacker": discord.Member,
         "defender": discord.Member,
-        "hp": {user_id: 120}
+        "hp": {user_id: 120},
         "pp": {user_id: {"ホーリーブレード": 3, ...}},
         "turn": attacker,  # 現在のターン
         "character": {user_id: "ランスロット"},

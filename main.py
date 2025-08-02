@@ -643,6 +643,46 @@ async def character_info(interaction: discord.Interaction):
 
     await interaction.response.send_message(embed=embed, ephemeral=True)
 
+DATA_FILE = "characters.json"
+
+# データを読み込む
+def load_data():
+    if not os.path.exists(DATA_FILE):
+        with open(DATA_FILE, "w", encoding="utf-8") as f:
+            json.dump({"users": {}}, f, ensure_ascii=False, indent=4)
+    with open(DATA_FILE, "r", encoding="utf-8") as f:
+        return json.load(f)
+
+# データを保存する
+def save_data(data):
+    with open(DATA_FILE, "w", encoding="utf-8") as f:
+        json.dump(data, f, ensure_ascii=False, indent=4)
+
+# 例: ランスロットを追加
+def add_lancelot(user_id):
+    data = load_data()
+    if user_id not in data["users"]:
+        data["users"][user_id] = {
+            "current": "ランスロット",
+            "characters": {
+                "ランスロット": {
+                    "level": 1,
+                    "exp": 0,
+                    "skills": [
+                        {"name": "秘剣・幻影突き", "pp": 3},
+                        {"name": "聖騎士の誓い", "pp": 2},
+                        {"name": "光速斬り", "pp": 3},
+                        {"name": "無双の刃", "pp": 1}
+                    ]
+                }
+            }
+        }
+        save_data(data)
+        print(f"✅ {user_id} にランスロットを付与しました。")
+
+# 動作確認
+add_lancelot("123456789012345678")
+
 
 @tree.command(name="コマンド一覧", description="登録済みのスラッシュコマンド一覧を表示")
 async def show_commands(interaction: discord.Interaction):

@@ -541,34 +541,28 @@ async def on_ready():
     await tree.sync(guild=discord.Object(id=GUILD_ID))
     print(f"{bot.user} でログインしました。")
 
-# --- Bot起動 ---
-TOKEN = os.environ.get("DISCORD_TOKEN")
-bot.run(TOKEN)
 
-# ---- Bot起動 ----
-@bot.event
-async def on_ready():
-    await tree.sync(guild=discord.Object(id=GUILD_ID))
-    print(f"{bot.user} が起動しました。")
 
-keep_alive()
-bot.run(os.environ["TOKEN"])
+
 
 @tree.command(name="コマンド一覧", description="登録済みのスラッシュコマンド一覧を表示")
 async def show_commands(interaction: discord.Interaction):
     commands = await tree.fetch_commands(guild=discord.Object(id=GUILD_ID))
-    await interaction.response.send_message("\n".join(f"/{cmd.name}" for cmd in commands))
+    await interaction.response.send_message("\n".join(f"/{cmd.name}" for cmd in 
 
+# --- 起動処理（1つだけに統一） ---
 @bot.event
 async def on_ready():
-    tree.clear_commands(guild=discord.Object(id=GUILD_ID))  # ← 追加！
     await tree.sync(guild=discord.Object(id=GUILD_ID))
     print(f"{bot.user} がログインしました。")
 
+from keep_alive import keep_alive
 import os
-TOKEN = os.environ.get("TOKEN")
-bot.run(TOKEN)
 
-# --- Bot起動 ---
-keep_alive()
-bot.run(os.environ["TOKEN"])
+keep_alive()  # Flaskなどを使ってRenderで24時間稼働させるための処理
+
+TOKEN = os.environ.get("TOKEN")
+if not TOKEN:
+    raise ValueError("❌ TOKENが読み込めませんでした。Renderの環境変数を確認してください。")
+
+bot.run(TOKEN)

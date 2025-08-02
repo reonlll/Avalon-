@@ -599,11 +599,6 @@ def save_character_data(data):
     with open(CHARACTER_FILE, "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False, indent=4)
 
-@tree.command(name="キャラ情報", description="現在育成中のキャラの情報を表示します")
-async def char_info(interaction: discord.Interaction):
-    user_id = str(interaction.user.id)
-    data = load_character_data()
-
     if user_id not in data["users"]:
         await interaction.response.send_message("キャラが登録されていません。", ephemeral=True)
         return

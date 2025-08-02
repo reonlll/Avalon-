@@ -683,6 +683,91 @@ def add_lancelot(user_id):
 # 動作確認
 add_lancelot("123456789012345678")
 
+from discord import app_commands
+import json
+import discord
+
+CHARACTER_FILE = "characters.json"
+
+def load_character_data():
+    with open(CHARACTER_FILE, "r", encoding="utf-8") as f:
+        return json.load(f)
+
+def save_character_data(data):
+    with open(CHARACTER_FILE, "w", encoding="utf-8") as f:
+        json.dump(data, f, ensure_ascii=False, indent=4)
+
+@tree.command(name="キャラ情報", description="現在育成中のキャラの情報を表示します")
+async def char_info(interaction: discord.Interaction):
+    user_id = str(interaction.user.id)
+    data = load_character_data()
+
+    if user_id not in data["users"]:
+        await interaction.response.send_message("キャラが登録されていません。", ephemeral=True)
+        return
+
+    user_data = data["users"][user_id]
+    char_name = user_data["current"]
+    char_info = user_data["characters"][char_name]
+    level = char_info["level"]
+    exp = char_info["exp"]
+    skills = char_info["skills"]
+
+    skill_list = "\n".join([f"- {skill['name']} (使用可能数: {skill['pp']})" for skill in skills])
+
+    embed = discord.Embed(
+        title=f"🧬 {char_name} の情報",
+        description=f"**Lv {level}** / EXP: {exp}\n\n**スキル一覧：**\n{skill_list}",
+        color=discord.Color.blue()
+    )
+    await interaction.response.send_message(embed=embed)
+
+def add_lancelot(user_id):
+    data = load_character_data()
+    if user_id not in data["users"]:
+        data["users"][user_id] = {
+            "current": "ランスロット",
+            "characters": {
+                "ランスロット": {
+                    "level": 1,
+                    "exp": 0,
+                    "skills": [
+                        {"name": "秘剣・幻影突き", "pp": 3},
+                        {"name": "聖騎士の誓い", "pp": 2},
+                        {"name": "光速斬り", "pp": 3},
+                        {"name": "無双の刃", "pp": 1}
+                    ]
+                }
+            }
+        }
+        save_character_data(data)
+        
+@tree.command(name="キャラ付与", description="指定したユーザーにキャラを付与します（管理者専用）")
+@app_commands.describe(user="キャラを付与する相手", character="付与するキャラ名")
+@app_commands.autocomplete(character=lambda interaction, current: character_autocomplete(current))
+async def give_character(interaction: discord.Interaction, user: discord.Member, character: str):
+    if not interaction.user.guild_permissions.administrator:
+        await interaction.response.send_message("このコマンドは管理者専用です。", ephemeral=True)
+        return
+
+    valid_characters = ["ランスロット", "ガウェイン", "トリスタン", "パーシバル", "モードレッド"]
+
+    if character not in valid_characters:
+        await interaction.response.send_message(f"❌ 無効なキャラ名です。利用可能なキャラ: {', '.join(valid_characters)}", ephemeral=True)
+        return
+
+    user_id = str(user.id)
+    if user_id not in character_data:
+        character_data[user_id] = {"owned": []}
+
+    if character in character_data[user_id]["owned"]:
+        await interaction.response.send_message(f"{user.mention} はすでに {character} を所持しています。", ephemeral=True)
+        return
+
+    character_data[user_id]["owned"].append(character)
+    save_character_data()
+
+    await interaction.response.send_message(f"✅ {user.mention} に {character} を付与しました。")
 
 @tree.command(name="コマンド一覧", description="登録済みのスラッシュコマンド一覧を表示")
 async def show_commands(interaction: discord.Interaction):

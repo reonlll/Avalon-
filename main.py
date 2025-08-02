@@ -688,12 +688,6 @@ async def on_ready():
     await tree.sync(guild=discord.Object(id=GUILD_ID))
     print(f"{bot.user} がログインしました。")
 
-@bot.event
-async def on_ready():
-    await tree.sync(guild=discord.Object(id=GUILD_ID))  # ギルドID指定
-    print(f"{bot.user} がログインしました。")
-
-
 
 # --- Bot起動 ---
 keep_alive()

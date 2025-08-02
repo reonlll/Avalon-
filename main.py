@@ -31,21 +31,6 @@ def save_user_roles():
     }
     requests.put(url, headers=headers, json=user_owned_roles)
 
-def has_character(user_id: int, character_name: str) -> bool:
-    """指定ユーザーがそのキャラを所持しているか確認"""
-    return character_name in user_characters.get(str(user_id), [])
-
-data = load_character_data()
-if user_id not in data["users"]:
-    data["users"][user_id] = {"owned": []}
-
-if character in data["users"][user_id]["owned"]:
-    await interaction.response.send_message(f"{user.mention} はすでに {character} を所持しています。", ephemeral=True)
-    return
-
-data["users"][user_id]["owned"].append(character)
-save_character_data(data)
-
 # Intent設定
 intents = discord.Intents.default()
 intents.message_content = True

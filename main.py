@@ -565,6 +565,9 @@ async def on_ready():
     await tree.sync(guild=discord.Object(id=GUILD_ID))
     print(f"{bot.user} がログインしました。")
 
+import os
+TOKEN = os.environ.get("DISCORD_TOKEN")
+bot.run(TOKEN)
 
 # --- Bot起動 ---
 keep_alive()

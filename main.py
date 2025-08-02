@@ -30,6 +30,9 @@ def save_user_roles():
     }
     requests.put(url, headers=headers, json=user_owned_roles)
 
+def has_character(user_id: int, character_name: str) -> bool:
+    """指定ユーザーがそのキャラを所持しているか確認"""
+    return character_name in user_characters.get(str(user_id), [])
 
 # Intent設定
 intents = discord.Intents.default()

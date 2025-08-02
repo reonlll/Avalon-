@@ -769,6 +769,14 @@ async def give_character(interaction: discord.Interaction, user: discord.Member,
 
     await interaction.response.send_message(f"✅ {user.mention} に {character} を付与しました。")
 
+async def character_autocomplete(current: str) -> List[app_commands.Choice[str]]:
+    all_characters = ["ランスロット", "ガウェイン", "トリスタン", "パーシバル", "モードレッド"]
+    return [
+        app_commands.Choice(name=char, value=char)
+        for char in all_characters
+        if current.lower() in char.lower()
+    ]
+
 @tree.command(name="コマンド一覧", description="登録済みのスラッシュコマンド一覧を表示")
 async def show_commands(interaction: discord.Interaction):
     commands = await tree.fetch_commands(guild=discord.Object(id=GUILD_ID))

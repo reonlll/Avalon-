@@ -435,7 +435,57 @@ class ShisumaGuessButton(discord.ui.Button):
 @tree.command(name="指スマ", description="指の本数と合計を予想してBotと勝負！（2000GOLD）", guild=discord.Object(id=GUILD_ID))
 async def shisuma(interaction: discord.Interaction):
     await interaction.response.send_message("🖐️ まず出す指の本数を選んでください（0〜2）", view=ShisumaView(interaction.user.id), ephemeral=True)
-        
+
+@tree.command(name="チンチロ", description="サイコロ3つで運試し！（2000GOLDベット）", guild=discord.Object(id=GUILD_ID))
+async def chinchiro(interaction: discord.Interaction):
+    user_id = str(interaction.user.id)
+    load_balance_data()
+
+    if balance_data.get(user_id, 0) < 2000:
+        await interaction.response.send_message("💰 2000GOLDが必要です。", ephemeral=True)
+        return
+
+    # サイコロ3つを振る
+    dice = [random.randint(1, 6) for _ in range(3)]
+    counts = {i: dice.count(i) for i in set(dice)}
+    result = "🎲 出目：" + " ".join([f"{d}" for d in dice]) + "\n"
+    reward = 0
+
+    # 役判定
+    if dice[0] == dice[1] == dice[2]:
+        if dice[0] == 1:
+            result += "🎯 ピンゾロ！ +5000GOLD！"
+            reward = 5000
+        elif dice[0] == 6:
+            result += "🎯 ゾロ目（6）！ +3000GOLD！"
+            reward = 3000
+        else:
+            result += f"🎯 ゾロ目（{dice[0]}）！ +2000GOLD！"
+            reward = 2000
+    elif sorted(dice) == [1, 2, 3]:
+        result += "💀 ヒフミ… 大失敗！ -2000GOLD！"
+        reward = -2000
+    elif sorted(dice) == [4, 5, 6]:
+        result += "✨ シゴロ！ +1000GOLD！"
+        reward = 1000
+    elif 2 in counts.values():
+        # 1ペア＋出目
+        for num, count in counts.items():
+            if count == 1:
+                result += f"💡 役：{num}！ +{num*100}GOLD！"
+                reward = num * 100
+                break
+    else:
+        result += "💤 目なし（ハズレ） -2000GOLD！"
+        reward = -2000
+
+    # 所持金更新
+    balance_data[user_id] += reward
+    save_balance_data()
+
+    await interaction.response.send_message(result, ephemeral=True)
+
+
 @tree.command(name="ロール外し", description="自分のロールを外します（リストからは削除されません）")
 @app_commands.describe(role="外したいロール名")
 @app_commands.autocomplete(role=role_autocomplete)

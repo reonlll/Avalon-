@@ -13,6 +13,14 @@ import json
 ROLE_BIN_ID = "6851e9728960c979a5abb516"
 user_owned_roles = {}
 
+# 補完関数の定義
+async def role_autocomplete(interaction: discord.Interaction, current: str) -> list[app_commands.Choice[str]]:
+    roles = [role.name for role in interaction.guild.roles if role.name != "@everyone"]
+    return [
+        app_commands.Choice(name=role, value=role)
+        for role in roles if current.lower() in role.lower()
+    ][:25]
+
 def load_user_roles():
     url = f"https://api.jsonbin.io/v3/b/{ROLE_BIN_ID}/latest"
     headers = {"X-Master-Key": API_KEY}

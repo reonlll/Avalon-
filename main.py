@@ -291,7 +291,7 @@ async def roll_gacha(interaction: discord.Interaction):
     )
 
 
-@tree.command(name="ロール一覧", description="自分の所持しているロールを表示します（他の人には見えません）")
+@tree.command(name="ロール一覧", description="自分の所持しているロールを表示します（他の人には見えません）", guild=discord.Object(id=GUILD_ID))
 async def role_list(interaction: discord.Interaction):
     user_id = str(interaction.user.id)
     load_user_roles()

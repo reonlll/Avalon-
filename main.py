@@ -428,6 +428,20 @@ class ShisumaGuessButton(discord.ui.Button):
 async def shisuma(interaction: discord.Interaction):
     await interaction.response.send_message("🖐️ まず出す指の本数を選んでください（0〜2）", view=ShisumaView(interaction.user.id), ephemeral=True)
         
+@tree.command(name="ロール外し", description="自分のロールを外します（リストからは削除されません）")
+@app_commands.describe(role="外したいロール名")
+@app_commands.autocomplete(role=role_autocomplete)
+async def remove_role(interaction: discord.Interaction, role: str):
+    guild = interaction.guild
+    member = interaction.user
+    discord_role = discord.utils.get(guild.roles, name=role)
+
+    if discord_role not in member.roles:
+        await interaction.response.send_message("そのロールはあなたについていません。", ephemeral=True)
+        return
+
+    await member.remove_roles(discord_role)
+    await interaction.response.send_message(f"{role} のロールを外しました。", ephemeral=True)
         # --- 起動処理（1つだけに統一） ---
 @bot.event
 async def on_ready():

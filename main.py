@@ -283,15 +283,17 @@ async def roll_gacha(interaction: discord.Interaction):
     )
 
 
-@tree.command(name="ロール一覧", description="自分が所持しているロールを確認", guild=discord.Object(id=GUILD_ID))
-async def list_roles(interaction: discord.Interaction):
-    load_user_roles()
+@tree.command(name="ロール一覧", description="自分の獲得したロール一覧を表示します")
+async def role_list(interaction: discord.Interaction):
     user_id = str(interaction.user.id)
-    roles = user_owned_roles.get(user_id, [])
-    if not roles:
-        await interaction.response.send_message("🎭 まだロールを獲得していません。", ephemeral=True)
-    else:
-        await interaction.response.send_message("🎭 あなたの所持ロール：\n" + ", ".join(roles), ephemeral=True)
+    load_user_roles()  # 必要に応じてここで再読込
+
+    if user_id not in user_owned_roles or not user_owned_roles[user_id]:
+        await interaction.response.send_message("ロールをまだ獲得していません。", ephemeral=True)
+        return
+
+    role_list = "\n".join(user_owned_roles[user_id])
+    await interaction.response.send_message(f"🎲 あなたの所持ロール一覧：\n{role_list}", ephemeral=True)
 
 
 from discord import app_commands

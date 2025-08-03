@@ -445,6 +445,49 @@ async def chinchiro(interaction: discord.Interaction):
         await interaction.response.send_message("💰 2000GOLDが必要です。", ephemeral=True)
         return
 
+class CoinTossView(discord.ui.View):
+    def __init__(self, user_id):
+        super().__init__(timeout=30)
+        self.user_id = user_id
+
+    @discord.ui.button(label="🪙 表 (Heads)", style=discord.ButtonStyle.primary)
+    async def heads_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        await self.process_guess(interaction, "表")
+
+    @discord.ui.button(label="🔄 裏 (Tails)", style=discord.ButtonStyle.secondary)
+    async def tails_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        await self.process_guess(interaction, "裏")
+
+    async def process_guess(self, interaction: discord.Interaction, guess: str):
+        if str(interaction.user.id) != str(self.user_id):
+            await interaction.response.send_message("❌ これはあなた専用のゲームです。", ephemeral=True)
+            return
+
+        user_id = str(interaction.user.id)
+        load_balance_data()
+
+        if balance_data.get(user_id, 0) < 10000:
+            await interaction.response.send_message("💰 10000GOLDが必要です。", ephemeral=True)
+            return
+
+        result = random.choice(["表", "裏"])
+        msg = f"🪙 コイントスの結果：**{result}**\n"
+
+        if guess == result:
+            balance_data[user_id] += 10000
+            msg += "🎉 的中！+10000GOLD獲得！"
+        else:
+            balance_data[user_id] -= 10000
+            msg += "💸 残念！-10000GOLD失いました。"
+
+        save_balance_data()
+        await interaction.response.send_message(msg, ephemeral=True)
+
+# /コイントス コマンド
+@tree.command(name="コイントス", description="表か裏か当てよう！（10000GOLDベット）", guild=discord.Object(id=GUILD_ID))
+async def coin_toss(interaction: discord.Interaction):
+    await interaction.response.send_message("🪙 表か裏を選んでください！", view=CoinTossView(interaction.user.id), ephemeral=True)
+
     # サイコロ3つを振る
     dice = [random.randint(1, 6) for _ in range(3)]
     counts = {i: dice.count(i) for i in set(dice)}

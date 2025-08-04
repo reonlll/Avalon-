@@ -436,7 +436,16 @@ class ShisumaGuessButton(discord.ui.Button):
 async def shisuma(interaction: discord.Interaction):
     await interaction.response.send_message("🖐️ まず出す指の本数を選んでください（0〜2）", view=ShisumaView(interaction.user.id), ephemeral=True)
 
-# サイコロ3つを振る
+@tree.command(name="チンチロ", description="サイコロを3つ振って勝負！（2000GOLD必要）", guild=discord.Object(id=GUILD_ID))
+async def chinchiro(interaction: discord.Interaction):
+    user_id = str(interaction.user.id)
+    load_balance_data()
+
+    if balance_data.get(user_id, 0) < 2000:
+        await interaction.response.send_message("💰 2000GOLDが必要です。", ephemeral=True)
+        return
+
+    # サイコロ3つを振る
     dice = [random.randint(1, 6) for _ in range(3)]
     counts = {i: dice.count(i) for i in set(dice)}
     result = "🎲 出目：" + " ".join([f"{d}" for d in dice]) + "\n"
@@ -460,7 +469,6 @@ async def shisuma(interaction: discord.Interaction):
         result += "✨ シゴロ！ +1000GOLD！"
         reward = 1000
     elif 2 in counts.values():
-        # 1ペア＋出目
         for num, count in counts.items():
             if count == 1:
                 result += f"💡 役：{num}！ +{num*100}GOLD！"
@@ -470,7 +478,10 @@ async def shisuma(interaction: discord.Interaction):
         result += "💤 目なし（ハズレ） -2000GOLD！"
         reward = -2000
 
-    if balance_data.get(user_id, 0) < 2000
+    balance_data[user_id] = balance_data.get(user_id, 0) + reward
+    save_balance_data()
+
+    await interaction.response.send_message(result, ephemeral=True)
     
 
 

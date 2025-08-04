@@ -436,11 +436,6 @@ class ShisumaGuessButton(discord.ui.Button):
 async def shisuma(interaction: discord.Interaction):
     await interaction.response.send_message("🖐️ まず出す指の本数を選んでください（0〜2）", view=ShisumaView(interaction.user.id), ephemeral=True)
 
-@tree.command(name="チンチロ", description="サイコロ3つで運試し！（2000GOLDベット）", guild=discord.Object(id=GUILD_ID))
-async def chinchiro(interaction: discord.Interaction):
-    user_id = str(interaction.user.id)
-    load_balance_data()
-    
 # サイコロ3つを振る
     dice = [random.randint(1, 6) for _ in range(3)]
     counts = {i: dice.count(i) for i in set(dice)}
@@ -475,9 +470,9 @@ async def chinchiro(interaction: discord.Interaction):
         result += "💤 目なし（ハズレ） -2000GOLD！"
         reward = -2000
 
-    if balance_data.get(user_id, 0) < 2000:
-        await interaction.response.send_message("💰 2000GOLDが必要です。", ephemeral=True)
-        return
+    if balance_data.get(user_id, 0) < 2000
+    
+
 
 class CoinTossView(discord.ui.View):
     def __init__(self, user_id):
